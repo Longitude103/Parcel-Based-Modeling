@@ -15,12 +15,15 @@ set_target_properties(cropsim PROPERTIES
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   # The original is fixed to these flags so results match old runs.
   target_compile_options(cropsim PRIVATE -O2 -ffree-line-length-none -std=legacy)
-  # On Windows link the Fortran runtime in, so the DLL stands alone. On
-  # Linux and macOS the wheel repair step (auditwheel / delocate) bundles
-  # libgfortran into the wheel instead.
+  # On Windows and macOS link the Fortran runtime in, so the library stands
+  # alone (Homebrew's libgfortran.dylib targets only the newest macOS). On
+  # Linux the wheel repair step (auditwheel) bundles libgfortran instead.
   if(WIN32)
     target_link_options(cropsim PRIVATE -static)
     set_target_properties(cropsim PROPERTIES PREFIX "lib")
+  elseif(APPLE)
+    target_link_options(cropsim PRIVATE
+      -static-libgfortran -static-libquadmath -static-libgcc)
   endif()
 elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
   target_compile_options(cropsim PRIVATE -O2)

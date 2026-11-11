@@ -1,0 +1,8 @@
+CODE   FACTOR1  FACTOR2     NAME
+----------------------------------------
+   1      100      100     NONE                
+   2       90       75     DISK                
+   3       70       50     CHISEL              
+   4       10        5     MOLDBOARD           
+   5       85       70     FIELD CULT          
+   6       95       90     PLANTER             

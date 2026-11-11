@@ -1,0 +1,45 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "ninja; sys_platform == 'win32'"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "cropsim"
+version = "0.1.0"
+description = "Python access to the CropSim v8.0 Fortran soil water balance model"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Proprietary" }
+authors = [{ name = "Longitude 103" }]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Fortran",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.scikit-build]
+minimum-version = "0.10"
+# ctypes binding: one wheel per platform works for every Python 3 version.
+wheel.py-api = "py3"
+wheel.packages = ["src/cropsim"]
+cmake.build-type = "Release"
+sdist.include = ["fortran/src/*.f90", "fortran/original/*", "tools/*.py"]
+
+# On Windows CMake would pick Visual Studio, which has no gfortran support.
+[[tool.scikit-build.overrides]]
+if.platform-system = "win32"
+cmake.args = ["-G", "Ninja"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.cibuildwheel]
+build = "cp312-*"
+skip = "*-musllinux_* *-win32 *_i686"
+test-extras = ["test"]
+test-command = "pytest {project}/tests"
+
+[tool.cibuildwheel.linux]
+before-all = "yum install -y gcc-gfortran || dnf install -y gcc-gfortran"
+

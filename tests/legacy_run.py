@@ -23,10 +23,31 @@ SOIL_ORDER = legacy.SOIL_CODES
 FFLAGS = ["-O2", "-ffree-line-length-none", "-std=legacy"]
 
 
+# CROPCO reads PCT, IEFC and GDDCUT before setting them on some days, so the
+# original's results there depend on the compiler. The library gives them a
+# defined value (see tools/make_engine.py). The reference build gets the same
+# definition: module variables, reset at the start of each run.
+CROPCO_DECLS = (
+    "      REAL ::      PCT\n"
+    "      INTEGER ::   IEFC\n"
+    "      REAL ::      GDDCUT\n"
+    "      END MODULE PARM"
+)
+CROPCO_RESET = "        IRIGNO = 0\n        PCT = 0.0\n        IEFC = 1\n        GDDCUT = 0.0"
+
+
 def build_original(work: Path, fc: str = "gfortran") -> Path:
-    """Compile the original program with its file paths pointed at the run folder."""
+    """Compile the original program with its file paths pointed at the run folder.
+
+    Besides the paths, the only change is the CROPCO definition described
+    above CROPCO_DECLS.
+    """
     src = ORIGINAL.read_text()
     src = src.replace("DATA DRIVE/'S:\\Cropsim\\Run004\\'/", "DATA DRIVE/'./'/")
+    assert src.count("      END MODULE PARM") == 1
+    src = src.replace("      END MODULE PARM", CROPCO_DECLS)
+    assert src.count("        IRIGNO = 0\n") == 1
+    src = src.replace("        IRIGNO = 0\n", CROPCO_RESET + "\n")
     patched = []
     for line in src.split("\n"):
         if "'" in line and "\\" in line:

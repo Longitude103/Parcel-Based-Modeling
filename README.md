@@ -98,6 +98,12 @@ the original read or wrote files or stopped:
 - The known-irrigation file (`FDFILE`) was read into `FDIRRIG` with its
   indexes swapped relative to how the engine uses them, and overflowed past 4
   events. The library stores events the way the engine reads them (up to 50).
+- `CROPCO` read three of its local variables (`PCT`, `IEFC`, `GDDCUT`)
+  before setting them on some days (alfalfa before green-up and between
+  cuttings, hay after its cutting), so those results depended on the
+  compiler. The library keeps them from day to day within a run and starts
+  each run at `PCT=0`, `IEFC=1`, `GDDCUT=0`. The parity test builds the
+  original with the same definition, which is its only change besides paths.
 - Values a SIM file does not set for its crop type (for example `GDDFLO` for
   alfalfa and pasture, which `ROOTZN` still uses) come from the `Sim` object
   (default 0) rather than from whatever SIM file ran before.

@@ -11,6 +11,8 @@ None of the edits change the water-balance science. They only:
   * take weather from arrays instead of a .WEA file in library mode,
   * turn STOP statements into an error code in library mode, so a bad input
     raises a Python error instead of killing the Python process,
+  * give three CROPCO variables that were read before being set (PCT, IEFC,
+    GDDCUT) a defined value, so results no longer depend on the compiler,
   * add MODULE PARM_SNAPSHOT (generated from the PARM declarations), which
     saves every PARM variable once the parameters are set and restores them
     before each library run, so no value can carry over from an earlier run.
@@ -56,6 +58,16 @@ MODULE_ADDITIONS = """\
       REAL ::      WX_PRECIP(366)      !LIB
       REAL ::      WX_EPAN(366)        !LIB
       REAL ::      WX_ETR(366)         !LIB
+!LIB  CROPCO used these as ordinary local variables but reads them before
+!LIB  setting them on some days (PCT before alfalfa green-up, IEFC on days
+!LIB  between cuttings, GDDCUT after the hay cutting), so their values
+!LIB  depended on the compiler. Declaring them here makes CROPCO use these
+!LIB  module variables instead: they keep their value from day to day within
+!LIB  a run, and cs_run_year resets them to PCT=0, IEFC=1, GDDCUT=0 at the
+!LIB  start of every run.
+      REAL ::      PCT                 !LIB
+      INTEGER ::   IEFC                !LIB
+      REAL ::      GDDCUT              !LIB
 """
 
 

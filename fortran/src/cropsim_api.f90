@@ -305,6 +305,10 @@
 !     Start from the values saved when the parameters were set, so
 !     nothing is left over from an earlier run.
       CALL PARM_RESTORE
+!     CROPCO day-to-day values (see tools/make_engine.py).
+      PCT    = 0.0
+      IEFC   = 1
+      GDDCUT = 0.0
 
 !     Library mode: no text files, no printed output.
       LIBMODE   = .TRUE.

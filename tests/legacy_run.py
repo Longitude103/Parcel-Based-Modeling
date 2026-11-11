@@ -62,16 +62,20 @@ def build_original(work: Path, fc: str = "gfortran") -> Path:
 
 
 def make_run_dir(run: Path) -> None:
-    """Lay out the fixtures the way the original program's paths expect."""
+    """Lay out the fixtures the way the original program's paths expect.
+
+    The original mixes CSMODEL/CSModel and RESULTS/Results. On macOS and
+    Windows those are the same folder, so every mkdir tolerates existing.
+    """
     cs = run / "CSMODEL"
-    (cs / "WEA").mkdir(parents=True)
-    (cs / "SOIL").mkdir()
+    (cs / "WEA").mkdir(parents=True, exist_ok=True)
+    (cs / "SOIL").mkdir(exist_ok=True)
     zone = run / "CSModel" / "SIM" / "98" / "ZONE1"
-    zone.mkdir(parents=True)
+    zone.mkdir(parents=True, exist_ok=True)
     out = run / "Results" / "Update2013" / "98"
     for sub in ("Mon", "YR", "Precip"):
-        (out / sub).mkdir(parents=True)
-    (run / "RESULTS").mkdir()
+        (out / sub).mkdir(parents=True, exist_ok=True)
+    (run / "RESULTS").mkdir(exist_ok=True)
     shutil.copy(FIX / "BLOCK.DAT", cs / "BLOCK.DAT")
     shutil.copy(FIX / "TILLAGE.DAT", cs / "TILLAGE.DAT")
     shutil.copy(FIX / "INITIAL.DAT", cs / "INITIAL.DAT")

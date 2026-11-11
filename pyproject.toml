@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core>=0.10"]
+requires = ["scikit-build-core>=0.10", "ninja; sys_platform == 'win32'"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -26,6 +26,11 @@ wheel.packages = ["src/cropsim"]
 cmake.build-type = "Release"
 sdist.include = ["fortran/src/*.f90", "fortran/original/*", "tools/*.py"]
 
+# On Windows CMake would pick Visual Studio, which has no gfortran support.
+[[tool.scikit-build.overrides]]
+if.platform-system = "win32"
+cmake.args = ["-G", "Ninja"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
@@ -38,6 +43,3 @@ test-command = "pytest {project}/tests"
 [tool.cibuildwheel.linux]
 before-all = "yum install -y gcc-gfortran || dnf install -y gcc-gfortran"
 
-[tool.cibuildwheel.windows]
-# The DLL links the Fortran runtime statically (see CMakeLists.txt).
-environment = { CMAKE_GENERATOR = "MinGW Makefiles" }

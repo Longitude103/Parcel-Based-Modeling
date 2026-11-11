@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+build/
+dist/
+wheelhouse/
+*.egg-info/
+*.so
+*.dylib
+*.dll
+*.mod
+.venv/
+.pytest_cache/

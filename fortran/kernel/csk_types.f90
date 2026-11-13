@@ -59,6 +59,9 @@ module csk_types
   ! Reported transpiration equals the water taken from the soil
   ! (original DEPLT 2267-2310).
   integer, parameter, public :: FIX_TRANSPIRATION_LIMIT = 64
+  ! Wetland, riparian and open-water ET is taken from the soil water,
+  ! with any shortfall reported as supply (original DEPLT 2347-2357).
+  integer, parameter, public :: FIX_WETLAND_BALANCE = 128
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).

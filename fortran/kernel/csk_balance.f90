@@ -142,7 +142,7 @@ contains
     type(csk_work_t), intent(inout) :: w
     type(csk_result_t), intent(inout) :: res
     real :: e, t, et, tup, drain, extra, distd, amt, addl, thetup, dfract, dist
-    real :: s0, s1, inflow, outflow
+    real :: s0, s1, inflow, outflow, short, take
     integer :: i, jday, jdywet, imon, iday, iweek, itill, crop
     logical :: wet, reach248
 
@@ -376,9 +376,32 @@ contains
       ! profile is held at field capacity.
       if (wet) then
         et = w%kc * w%etr(jday)
-        do i = 1, w%layers
-          w%theta(i) = w%fieldc(i)
-        end do
+        if (fix_on(w, FIX_WETLAND_BALANCE)) then
+          ! ET is met first from water above field capacity (today's
+          ! rain), top down; the rest, and any refill of a layer below
+          ! field capacity, is supplied from ground or surface water and
+          ! reported as WETSUP. Water left above field capacity drains.
+          short = et
+          do i = 1, w%layers
+            take = min(max(w%theta(i) - w%fieldc(i), 0.)*w%depth(i), short)
+            w%theta(i) = w%theta(i) - take/w%depth(i)
+            short = short - take
+          end do
+          w%wetsup = short
+          do i = 1, w%layers
+            if (w%theta(i) < w%fieldc(i)) then
+              w%wetsup = w%wetsup + (w%fieldc(i) - w%theta(i))*w%depth(i)
+              w%theta(i) = w%fieldc(i)
+            end if
+          end do
+        else
+          ! Original: the profile is reset to field capacity, which
+          ! silently removes the day's rain (no drainage) and supplies
+          ! the ET from nowhere.
+          do i = 1, w%layers
+            w%theta(i) = w%fieldc(i)
+          end do
+        end if
       end if
 
       ! ---- Redistribution of water above field capacity ----

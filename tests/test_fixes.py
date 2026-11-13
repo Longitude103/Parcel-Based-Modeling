@@ -147,3 +147,20 @@ def test_transpiration_limit(kernel, inp, name):
                         if r.daily["t"][d] > 0 and abs(r.daily["balerr"][d]) > 1e-4]
     assert leaks[Fix.NONE] and all(x > 0 for x in leaks[Fix.NONE])
     assert leaks[Fix.TRANSPIRATION_LIMIT] == []
+
+
+@pytest.mark.parametrize("name", ["cattail", "reed_swamp", "shallow_water", "deep_water",
+                                  "riparian_wood"])
+def test_wetland_balance(kernel, inp, name):
+    """Off: the profile is reset to field capacity every day, so rain never
+    drains and ET comes from nowhere. On: rain meets ET first, the rest
+    drains, and the shortfall is reported as supply (WETSUPS)."""
+    off = chain(kernel, inp, name, fixes=Fix.NONE)
+    on = chain(kernel, inp, name, fixes=Fix.WETLAND_BALANCE)
+    assert all(r.annual["drains"] == 0 for r in off)
+    assert all(r.annual["eprecips"] > 0 for r in off)
+    assert all(r.annual["wetsups"] == 0 for r in off)
+    assert all(r.annual["drains"] > 0 and r.annual["wetsups"] > 0 for r in on)
+    assert sum(abs(r.annual["balerr"]) for r in on) < sum(abs(r.annual["balerr"]) for r in off)
+    # ET itself is unchanged: it is still KC x ETR.
+    assert [r.annual["ets"] for r in on] == [r.annual["ets"] for r in off]

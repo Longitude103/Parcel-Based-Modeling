@@ -21,6 +21,7 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 4 | 16 | `FORAGE_CUTTING_STAGE` | Alfalfa and hay: irrigation limits by cutting, deficits and yield by cutting |
 | 5 | 32 | `ALFALFA_REGROWTH` | Alfalfa with 2 cuttings: KC after the second cutting, so ET |
 | 6 | 64 | `TRANSPIRATION_LIMIT` | Transpiration and ET on water-short days; closes the water balance |
+| 7 | 128 | `WETLAND_BALANCE` | Wetland, riparian woodland and open water: DP and a new supply term (WETSUPS) |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -140,5 +141,37 @@ leave layers already below the wilting point alone.
 sandy soil, there are days with transpiration whose water balance is off
 by more than 0.0001 in (always too much ET) with the fix off, and none with
 it on.
+
+This was suspected in the technical reference and is now confirmed.
+
+## WETLAND_BALANCE: wetlands and open water reset to field capacity
+
+**Original** (DEPLT 2347-2357). For riparian woodland (16), wetlands (18,
+19) and open water (20, 21), ET is `KC x ETR` and every layer is then set
+back to field capacity. Rain that soaked in above field capacity is
+erased before it can drain, so these covers never produce deep
+percolation, and their ET is not taken from any store. Neither the lost
+rain nor the ET supply shows in any output.
+
+**Fix.** ET is met first from water above field capacity (the day's
+infiltration), top layer down. The shortfall, plus anything needed to
+bring a layer back to field capacity, is supplied from ground or surface
+water and reported as the new `WETSUPS` (annual), `WSMON` (monthly) and
+`wetsup` (daily) values. Water left above field capacity drains as for
+any other cover. The profile still ends each day at or above field
+capacity, and ET is unchanged.
+
+For these covers the groundwater flux is then `DRAINS - WETSUPS`: on
+the test parcels that is about -4 in/yr for cattails (rain 23.6 in,
+ET 27.4 in).
+
+**This is a science change, not only a bug fix.** It assumes that rain
+satisfies wetland ET before groundwater does. NeDNR may prefer another
+rule (for example, ET from groundwater only, with all rain recharging);
+the switch keeps the original available either way.
+
+**Test.** `test_wetland_balance` for all five covers: off, drainage is 0
+every year although rain soaks in, and nothing is reported as supply; on,
+both are reported, the water balance error shrinks, and ET is unchanged.
 
 This was suspected in the technical reference and is now confirmed.

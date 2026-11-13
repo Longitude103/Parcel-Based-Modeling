@@ -601,9 +601,18 @@ contains
     real :: remain, topdep, botdep, fdepth, zu, zl
     integer :: i
 
-    w%rzd = (w%rzmax - w%rzmin)*(w%gdd - w%gddroot)/(w%gddflo - w%gddroot) + w%rzmin
-    if (w%rzd > w%rzmax) w%rzd = w%rzmax
-    if (w%rzd < w%rzmin) w%rzd = w%rzmin
+    if (fix_on(w, FIX_PERENNIAL_ROOTS) .and. w%crop >= 10 .and. w%crop <= 13) then
+      ! Established perennial forage: full root depth all year.
+      w%rzd = w%rzmax
+    else
+      ! Original: roots grow from RZMIN at GDDROOT to RZMAX at GDDFLO.
+      ! Crops 10 and up never read GDDFLO (it is 0), so for them the
+      ! depth is RZMAX only if the balance starts on a day with no GDD
+      ! yet; otherwise it falls toward RZMIN as GDD accrue.
+      w%rzd = (w%rzmax - w%rzmin)*(w%gdd - w%gddroot)/(w%gddflo - w%gddroot) + w%rzmin
+      if (w%rzd > w%rzmax) w%rzd = w%rzmax
+      if (w%rzd < w%rzmin) w%rzd = w%rzmin
+    end if
 
     ! Fraction of each layer filled with roots. Layers below the roots
     ! keep their previous value (roots only deepen).

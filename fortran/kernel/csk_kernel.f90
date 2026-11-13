@@ -82,6 +82,9 @@ contains
       w%rzmgmt = w%rzmgmt * rzfact
       w%rzmax = w%rzmax * rzfact
     end if
+    ! The original scales RZMAX but not RZMIN, so on shallow soils RZMIN
+    ! can exceed RZMAX and the roots start deeper than the soil allows.
+    if (fix_on(w, FIX_RZMIN_CAP)) w%rzmin = min(w%rzmin, w%rzmax)
 
     w%iterrc = simp%iterrc
     w%chand = simp%chand

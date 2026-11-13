@@ -297,6 +297,49 @@ def test_fallow_crop(kernel, inp):
     assert [r.annual["ets"] for r in off] == [r.annual["ets"] for r in on]
 
 
+
+def test_perennial_roots(kernel, inp):
+    """Alfalfa whose water balance starts after GDD has begun to accrue:
+    the original's root equation (GDDFLO = 0 for crops 10+) pins the roots
+    at RZMIN all season; with the fix they stay at the soil-scaled RZMAX."""
+    sim = sc.scenarios()["alfalfa_spring_start"]
+    w = inp.weather[2012]
+    for code, rzmax in ((421, 0.7 * sim.rzmax), (832, sim.rzmax)):
+        off = kernel.run_year(sim, inp.soils[code], w, inp.initial)
+        on = kernel.run_year(sim, inp.soils[code], w, inp.initial, fixes=Fix.PERENNIAL_ROOTS)
+        days = season(off)
+        assert off.daily["gdd"][days[0]] > 0
+        assert all(off.daily["rzd"][d] == pytest.approx(sim.rzmin) for d in days)
+        assert all(on.daily["rzd"][d] == pytest.approx(rzmax) for d in days)
+        assert on.annual["ts"] > off.annual["ts"]
+    # A balance that starts on Jan 1 already gets RZMAX: no change.
+    base = sc.scenarios()["alfalfa_pivot"]
+    a = kernel.run_year(base, inp.soils[622], w, inp.initial)
+    b = kernel.run_year(base, inp.soils[622], w, inp.initial, fixes=Fix.PERENNIAL_ROOTS)
+    assert a.annual == b.annual
+    # Row crops keep the growth equation.
+    corn = sc.scenarios()["corn_pivot"]
+    a = kernel.run_year(corn, inp.soils[622], w, inp.initial)
+    b = kernel.run_year(corn, inp.soils[622], w, inp.initial, fixes=Fix.PERENNIAL_ROOTS)
+    assert a.daily["rzd"] == b.daily["rzd"]
+
+
+def test_rzmin_cap(kernel, inp):
+    """RZMIN 16 in, RZMAX 20 in: soil 421 scales RZMAX to 14 in. The
+    original starts (and keeps) the roots at 16 in; the fix caps them at 14."""
+    sim = sc.scenarios()["corn_shallow_roots"]
+    w = inp.weather[2012]
+    off = kernel.run_year(sim, inp.soils[421], w, inp.initial)
+    on = kernel.run_year(sim, inp.soils[421], w, inp.initial, fixes=Fix.RZMIN_CAP)
+    days = season(off)
+    assert max(off.daily["rzd"][d] for d in days) == pytest.approx(16.0)
+    assert max(on.daily["rzd"][d] for d in days) == pytest.approx(14.0)
+    # Deeper soils, where RZMIN is below the scaled RZMAX: no change.
+    for code in (622, 832):
+        a = kernel.run_year(sim, inp.soils[code], w, inp.initial)
+        b = kernel.run_year(sim, inp.soils[code], w, inp.initial, fixes=Fix.RZMIN_CAP)
+        assert a.annual == b.annual
+
 @pytest.mark.parametrize("name", list(sc.scenarios()))
 def test_all_fixes_close_the_water_balance(kernel, inp, name):
     """With every fix on, storage change equals inflow minus outflow for

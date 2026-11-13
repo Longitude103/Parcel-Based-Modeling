@@ -32,7 +32,9 @@ Mean change per year over the runs each fix changes.
 | [FALLOW_CROP](#fallow_crop) | 18 | 0 | 0 | 0 | 0 |
 | [PERENNIAL_ROOTS](#perennial_roots) | 18 | +0.10 | 0 | 0 | -14.09 |
 | [RZMIN_CAP](#rzmin_cap) | 6 | +0.23 | -0.02 | +0.23 | +0.02 |
-| **All fixes** | 666 | +0.84 | -1.33 | -1.21 | +0.89 |
+| [LEAP_CALENDAR](#leap_calendar) | 218 | -0.01 | +0.01 | 0 | 0 |
+| [TAILWATER_FURROW](#tailwater_furrow) | 18 | +0.55 | +0.02 | -0.09 | +0.02 |
+| **All fixes** | 666 | +0.84 | -1.32 | -1.21 | +0.89 |
 
 ## Water balance
 
@@ -64,32 +66,32 @@ Mean change per year over 3 soils x 6 years.
 
 | Scenario | Deep perc. | ET | Net irr. | Runoff | Wetland supply |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `corn_pivot` | -1.74 | -2.14 | +0.07 | +3.96 | 0 |
+| `corn_pivot` | -1.75 | -2.13 | +0.07 | +3.97 | 0 |
 | `corn_dry` | -0.08 | +0.07 | 0 | -0.27 | 0 |
-| `corn_district_demand` | -1.74 | -2.14 | +0.07 | +3.96 | 0 |
-| `corn_forecast_rain` | -1.58 | -2.43 | +0.09 | +4.07 | 0 |
-| `corn_forecast_balance` | -1.71 | -2.17 | +0.10 | +3.98 | 0 |
-| `corn_furrow` | -1.70 | -1.89 | +0.15 | +3.69 | 0 |
-| `corn_border` | -8.80 | -2.57 | -7.93 | +3.66 | 0 |
-| `corn_known_dates` | -1.15 | -0.16 | 0 | -0.07 | 0 |
+| `corn_district_demand` | -1.75 | -2.13 | +0.07 | +3.97 | 0 |
+| `corn_forecast_rain` | -1.59 | -2.43 | +0.09 | +4.07 | 0 |
+| `corn_forecast_balance` | -1.73 | -2.15 | +0.10 | +3.98 | 0 |
+| `corn_furrow` | -1.74 | -1.89 | +0.11 | +3.68 | 0 |
+| `corn_border` | -8.46 | -2.50 | -7.93 | +3.67 | 0 |
+| `corn_known_dates` | -1.16 | -0.15 | 0 | -0.07 | 0 |
 | `corn_terrace` | +2.59 | +0.64 | 0 | +1.45 | 0 |
-| `soy_dry` | -0.14 | +0.05 | 0 | -0.19 | 0 |
-| `soy_rotation` | -6.42 | -3.55 | -8.15 | +1.87 | 0 |
+| `soy_dry` | -0.14 | +0.04 | 0 | -0.16 | 0 |
+| `soy_rotation` | -6.41 | -3.50 | -8.09 | +1.87 | 0 |
 | `sorghum_dry` | -0.08 | +0.05 | 0 | -0.21 | 0 |
-| `wheat_fallow` | -0.70 | -1.79 | 0 | +2.46 | 0 |
+| `wheat_fallow` | -0.70 | -1.77 | 0 | +2.44 | 0 |
 | `wheat_irrigated` | -1.71 | -3.55 | +0.73 | +5.90 | 0 |
 | `smallgrain_dry` | -0.27 | -0.95 | 0 | +0.81 | 0 |
-| `beans_pivot` | -1.63 | -1.89 | +0.14 | +3.69 | 0 |
-| `potato_pivot` | -1.17 | -2.93 | +0.17 | +4.37 | 0 |
-| `sugarbeet_furrow` | -1.09 | -3.34 | +0.21 | +4.77 | 0 |
-| `sunflower_dry` | -0.09 | +0.26 | 0 | -0.33 | 0 |
-| `corn_shallow_roots` | -0.34 | +0.13 | -0.12 | -0.17 | 0 |
+| `beans_pivot` | -1.63 | -1.93 | +0.08 | +3.68 | 0 |
+| `potato_pivot` | -1.17 | -2.92 | +0.18 | +4.37 | 0 |
+| `sugarbeet_furrow` | -1.09 | -3.33 | +0.21 | +4.77 | 0 |
+| `sunflower_dry` | -0.08 | +0.26 | 0 | -0.33 | 0 |
+| `corn_shallow_roots` | -0.35 | +0.13 | -0.12 | -0.17 | 0 |
 | `alfalfa_pivot` | -0.06 | +0.26 | -0.15 | -0.47 | 0 |
 | `alfalfa_two_cuts` | -0.03 | +0.24 | -0.11 | -0.45 | 0 |
 | `alfalfa_spring_start` | +0.09 | 0 | 0 | -14.24 | 0 |
-| `alfalfa_rotation` | -7.28 | -12.20 | -17.07 | +2.69 | 0 |
+| `alfalfa_rotation` | -7.29 | -12.20 | -17.07 | +2.69 | 0 |
 | `hay_pivot` | -0.08 | +0.25 | -0.14 | -0.46 | 0 |
-| `pasture_pivot` | -0.05 | +0.12 | -0.24 | -0.45 | 0 |
+| `pasture_pivot` | -0.06 | +0.13 | -0.24 | -0.45 | 0 |
 | `pasture_rotation` | -6.75 | -6.39 | -10.98 | +2.46 | 0 |
 | `range` | -0.09 | +0.18 | 0 | -0.12 | 0 |
 | `turf_pivot` | -0.09 | +0.16 | -0.31 | -0.50 | 0 |
@@ -99,8 +101,8 @@ Mean change per year over 3 soils x 6 years.
 | `upland_wood` | -0.08 | +0.09 | 0 | -0.11 | 0 |
 | `cattail` | +17.14 | -0.07 | 0 | -0.48 | +19.63 |
 | `reed_swamp` | +13.96 | -0.03 | 0 | -0.48 | +32.20 |
-| `shallow_water` | +11.77 | 0 | 0 | -0.49 | +43.82 |
-| `deep_water` | +11.77 | 0 | 0 | -0.49 | +43.82 |
+| `shallow_water` | +11.77 | +0.01 | 0 | -0.49 | +43.83 |
+| `deep_water` | +11.77 | +0.01 | 0 | -0.49 | +43.83 |
 
 For wetland, riparian and open-water covers, the net groundwater effect is deep percolation minus wetland supply: the fixed model takes the water these covers use beyond rain from the water table.
 
@@ -110,6 +112,8 @@ For wetland, riparian and open-water covers, the net groundwater effect is deep 
 * **No change on these parcels.** FORAGE_CUTTING_STAGE matters only where a SIM file gives different values by cutting, and ET_ACCUMULATION only on days with almost no evaporative demand; the fixture inputs have neither. Each has a unit test that builds such a case (`tests/test_fixes.py`).
 * **Largest water-budget changes.** WETLAND_BALANCE (wetland, riparian and water covers now take their ET from the soil and the water table), ROTATION_FREQUENCY (the original delivered rotation water every day instead of every JDFREQ days) and RESIDUE_CN (the original cut the post-harvest curve number twice for residue, so it under-reports fall runoff). The RESIDUE_CN effect grows with residue amount and with rain after maturity, both of which are large in the fixture data; check it on real parcels.
 * **Root depth.** PERENNIAL_ROOTS changes only perennial covers whose water balance starts after planting (`alfalfa_spring_start`); with a Jan 1 start the original already gives RZMAX. Without the fix those runs go NaN from the second day (all soil water), so the runoff and evaporation "changes" in its table are against meaningless numbers; with the fix they give a season water budget close to the Jan 1 alfalfa (`alfalfa_pivot`), shortened by the later start. RZMIN_CAP changes only `corn_shallow_roots` on soil 421, the one case where RZMIN is deeper than the soil-scaled RZMAX.
+* **LEAP_CALENDAR** changes 2012, the one leap year in the fixtures, in every run (the run gains Dec 31 and the dates move), and later years through the soil state carried over from Dec 31 instead of Dec 30.
+* **TAILWATER_FURROW** changes only `corn_border`, the one IRRTYP 5 setup on rotation scheduling.
 * **SNOWMELT_BASE** touches every run because snow melted at 0 F instead of 32 F, so the original melted snow on most winter days.
 
 ## Each fix
@@ -124,8 +128,8 @@ Changed 378 of 666 runs, in 21 scenario(s): `cattail`, `corn_border`, `corn_dist
 | ET | -0.03 | -1.78 | |
 | Transp. | -0.04 | -2.10 | |
 | Evap. | +0.02 | +1.99 | |
-| Net irr. | 0 | +1.70 | |
-| Gross irr. | 0 | +2.00 | |
+| Net irr. | 0 | -1.70 | |
+| Gross irr. | 0 | -2.00 | |
 | Runoff | +0.01 | +1.17 | |
 | Eff. precip | -0.03 | -4.45 | |
 | Seasonal ET for yield (ETMAX) | +0.02 | -0.21 | |
@@ -177,7 +181,7 @@ Changed 666 of 666 runs, in 37 scenario(s): `alfalfa_pivot`, `alfalfa_rotation`,
 | Seasonal ET for yield (ETMAX) | +0.01 | +1.74 | |
 | Seasonal ET for yield (ETYLD) | 0 | -2.70 | |
 | Irrigations | 0 | +3 | |
-| First irr. day | 0 | -95 | |
+| First irr. day | 0 | +95 | |
 | Yield | -0.29 | -99.09 | |
 | Yield ratio | -0.001 | -0.495 | |
 
@@ -554,3 +558,81 @@ Changed 6 of 666 runs, in 1 scenario(s): `corn_shallow_roots`.
 | Runoff | +0.02 | +0.14 | |
 | Eff. precip | -0.02 | -0.14 | |
 | Irrigations | 0 | +1 | |
+
+### LEAP_CALENDAR
+
+Changed 218 of 666 runs, in 37 scenario(s): `alfalfa_pivot`, `alfalfa_rotation`, `alfalfa_spring_start`, `alfalfa_two_cuts`, `beans_pivot`, `cattail`, `corn_border`, `corn_district_demand`, `corn_dry`, `corn_forecast_balance`, `corn_forecast_rain`, `corn_furrow`, `corn_known_dates`, `corn_pivot`, `corn_shallow_roots`, `corn_terrace`, `deep_water`, `fallow`, `farmstead`, `hay_pivot`, `pasture_pivot`, `pasture_rotation`, `potato_pivot`, `range`, `reed_swamp`, `riparian_wood`, `shallow_water`, `smallgrain_dry`, `sorghum_dry`, `soy_dry`, `soy_rotation`, `sugarbeet_furrow`, `sunflower_dry`, `turf_pivot`, `upland_wood`, `wheat_fallow`, `wheat_irrigated`.
+
+| Output | Mean change (changed runs) | Largest change | Note |
+| --- | ---: | ---: | --- |
+| Deep perc. | -0.01 | -0.47 | |
+| ET | +0.01 | +1.13 | |
+| Transp. | -0.01 | +1.08 | |
+| Evap. | +0.02 | +0.73 | |
+| Net irr. | 0 | -1.06 | |
+| Gross irr. | 0 | -1.25 | |
+| Runoff | 0 | +0.43 | |
+| Eff. precip | 0 | -0.43 | |
+| Seasonal ET for yield (ETMAX) | 0 | +0.54 | |
+| Seasonal ET for yield (ETYLD) | +0.01 | +1.07 | |
+| Irrigations | 0 | -1 | |
+| Yield | +0.01 | -6.11 | |
+| Yield ratio | 0 | -0.031 | |
+
+By scenario (mean change per year over 3 soils x 6 years):
+
+| Scenario | Deep perc. | ET | Net irr. | Runoff |
+| --- | ---: | ---: | ---: | ---: |
+| `alfalfa_pivot` | 0 | +0.06 | +0.06 | 0 |
+| `alfalfa_rotation` | 0 | 0 | 0 | 0 |
+| `alfalfa_spring_start` | 0 | 0 | 0 | 0 |
+| `alfalfa_two_cuts` | 0 | 0 | 0 | 0 |
+| `beans_pivot` | -0.01 | -0.04 | -0.06 | -0.01 |
+| `cattail` | 0 | 0 | 0 | 0 |
+| `corn_border` | 0 | 0 | 0 | 0 |
+| `corn_district_demand` | -0.01 | 0 | 0 | 0 |
+| `corn_dry` | 0 | 0 | 0 | 0 |
+| `corn_forecast_balance` | 0 | 0 | 0 | 0 |
+| `corn_forecast_rain` | -0.01 | 0 | 0 | 0 |
+| `corn_furrow` | -0.01 | 0 | 0 | 0 |
+| `corn_known_dates` | -0.01 | 0 | 0 | 0 |
+| `corn_pivot` | -0.01 | 0 | 0 | 0 |
+| `corn_shallow_roots` | 0 | 0 | -0.01 | 0 |
+| `corn_terrace` | 0 | 0 | 0 | 0 |
+| `deep_water` | 0 | +0.01 | 0 | 0 |
+| `fallow` | 0 | 0 | 0 | 0 |
+| `farmstead` | 0 | 0 | 0 | 0 |
+| `hay_pivot` | 0 | 0 | 0 | 0 |
+| `pasture_pivot` | 0 | 0 | 0 | 0 |
+| `pasture_rotation` | 0 | 0 | 0 | 0 |
+| `potato_pivot` | -0.03 | 0 | -0.03 | 0 |
+| `range` | 0 | 0 | 0 | 0 |
+| `reed_swamp` | 0 | 0 | 0 | 0 |
+| `riparian_wood` | 0 | 0 | 0 | 0 |
+| `shallow_water` | 0 | +0.01 | 0 | 0 |
+| `smallgrain_dry` | 0 | 0 | 0 | 0 |
+| `sorghum_dry` | 0 | 0 | 0 | 0 |
+| `soy_dry` | -0.01 | -0.02 | 0 | +0.02 |
+| `soy_rotation` | 0 | 0 | 0 | 0 |
+| `sugarbeet_furrow` | 0 | 0 | 0 | 0 |
+| `sunflower_dry` | 0 | 0 | 0 | 0 |
+| `turf_pivot` | 0 | 0 | 0 | 0 |
+| `upland_wood` | 0 | +0.01 | 0 | 0 |
+| `wheat_fallow` | 0 | 0 | 0 | 0 |
+| `wheat_irrigated` | 0 | +0.06 | +0.06 | 0 |
+
+### TAILWATER_FURROW
+
+Changed 18 of 666 runs, in 1 scenario(s): `corn_border`.
+
+| Output | Mean change (changed runs) | Largest change | Note |
+| --- | ---: | ---: | --- |
+| Deep perc. | +0.55 | +0.85 | |
+| ET | +0.02 | +0.29 | |
+| Transp. | 0 | 0 | |
+| Evap. | +0.02 | +0.29 | |
+| Net irr. | -0.09 | -1.70 | |
+| Gross irr. | -0.11 | -2.00 | |
+| Runoff | +0.02 | +0.12 | |
+| Eff. precip | -0.02 | -0.12 | |
+| Irrigations | 0 | -1 | |

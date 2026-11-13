@@ -68,7 +68,9 @@ contains
       else
         w%groirr = w%ddepth
         w%netirr = w%ddepth*w%eapp(istage)
-        if (w%irrtyp > 3) then
+        ! The original applied tailwater to IRRTYP 4 and 5 here but only to
+        ! 4 in demand scheduling.
+        if (w%irrtyp == 4 .or. (w%irrtyp == 5 .and. .not. fix_on(w, FIX_TAILWATER_FURROW))) then
           w%dinf = w%groirr*(1.0 - (1.0 - w%ereuse(istage))*w%prunof(istage))
         else
           w%dinf = w%netirr
@@ -507,7 +509,7 @@ contains
       w%irgwk(iweek) = w%irgwk(iweek) + w%groirr
 
       ! ---- Monthly totals ----
-      call calday(jday, imon, iday)
+      call calday(jday, imon, iday, leap_calendar(w))
       w%etrmon(imon) = w%etrmon(imon) + w%etr(jday)
       w%emon(imon) = w%emon(imon) + e
       w%tmon(imon) = w%tmon(imon) + t

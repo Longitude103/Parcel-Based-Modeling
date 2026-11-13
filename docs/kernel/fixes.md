@@ -32,6 +32,8 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 15 | 32768 | `FALLOW_CROP` | Summer fallow: end-of-year crop, live-crop flag and yield (then next year's wheat logic) |
 | 16 | 65536 | `PERENNIAL_ROOTS` | Perennial covers (crops 10-14, 16-19): root depth, so T, ET, DP; removes a NaN in the original |
 | 17 | 131072 | `RZMIN_CAP` | Shallow soils where RZMIN exceeds the scaled RZMAX: root depth, so T, NIR, DP |
+| 18 | 262144 | `LEAP_CALENDAR` | Leap years: SIM dates after February (a day later), the last day simulated (Dec 31), and monthly totals |
+| 19 | 524288 | `TAILWATER_FURROW` | Rotation-scheduled IRRTYP 5: infiltrated irrigation, so DP and ET |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -371,3 +373,47 @@ stay, deeper than the soil's limit.
 20 in (`corn_shallow_roots`). On soil 421 `RZMAX` scales to 14 in; off,
 the roots sit at 16 in, on, at 14 in. Soils 622 and 832, where `RZMIN` is
 below the scaled `RZMAX`, are unchanged.
+
+## LEAP_CALENDAR: no leap years
+
+**Original** (DAYOFYR 1549, CALDAY 1455). Month-day dates from the SIM
+file (planting, start and end of the water balance) become days of the
+year through a fixed 365-day table, and daily values are added to months
+through the same table. The weather is read by day of year: a .WEA file
+holds one row per day, labelled year and day of year (`2012060` is
+Feb 29), with 366 rows in a leap year. In a leap year:
+
+* every SIM date after February lands a day early (May 5 becomes day 125,
+  which is May 4);
+* an end date of Dec 31 becomes day 365, so the last day of weather is
+  never simulated and the state carried into the next year is from Dec 30;
+* Feb 29 is added to March, and the first day of every later month to the
+  month before.
+
+Dates given as days of the year (cutting dates, `JFIRST`, `JSTOPI`, `JGOI`,
+known irrigation dates) are not converted and are not changed by the fix.
+
+**Fix.** Decided by Heath (2026-11-13): use a leap-aware calendar
+(Gregorian rule on the weather year) for both conversions.
+
+**Test.** `test_leap_calendar`: corn in 2012. Off, the run ends on day
+365 and each month's ETR total is the sum over the 365-day table's days;
+on, it ends on day 366, planting is a day later, and each month's total is
+the sum over the real calendar month. 2011 is unchanged.
+
+## TAILWATER_FURROW: tailwater for IRRTYP 5 in rotation scheduling only
+
+**Original** (IRRIGA 2824, 2857, 2911, 2972). Water that infiltrates from
+an irrigation is reduced by tailwater runoff and increased by its reuse
+(`PRUNOF`, `EREUSE`). Demand scheduling applies this only to furrow
+irrigation (`IRRTYP` 4); rotation deliveries (`IRRSCH` 3) apply it to
+`IRRTYP` 4 and 5.
+
+**Fix.** Decided by Heath (2026-11-13): tailwater applies only to furrow
+irrigation (`IRRTYP` 4). Other types infiltrate the net irrigation, as in
+demand scheduling.
+
+**Test.** `test_tailwater_furrow`: border irrigation (`IRRTYP` 5) on
+rotation (`corn_border`). Off, each day's infiltrated water is the gross
+depth times `1 - (1 - EREUSE)*PRUNOF`; on, it is the gross depth times
+`EAPP`. A furrow (`IRRTYP` 4) rotation run is unchanged.

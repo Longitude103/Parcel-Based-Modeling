@@ -179,7 +179,7 @@ contains
     ! A live crop at the start of the year was planted last fall: its
     ! season starts at spring green-up (March 15).
     if (w%crop == 7) then
-      call dayofyr(w%jdyplt, w%implt, w%idplt)
+      call dayofyr(w%jdyplt, w%implt, w%idplt, leap_calendar(w))
       w%jfplt = w%jdyplt
       if ((w%irrtyp > 1) .or. (w%itflag > 2)) then
         w%livecrop = 1
@@ -202,9 +202,9 @@ contains
     end do
 
     ! ---- Dates and weather (original 1049-1053, READWEAT) ----
-    call dayofyr(w%jdybg, w%imbg, w%idbg)
-    call dayofyr(w%jdyend, w%imend, w%idend)
-    call dayofyr(w%jdyplt, w%implt, w%idplt)
+    call dayofyr(w%jdybg, w%imbg, w%idbg, leap_calendar(w))
+    call dayofyr(w%jdyend, w%imend, w%idend, leap_calendar(w))
+    call dayofyr(w%jdyplt, w%implt, w%idplt, leap_calendar(w))
     w%imstr = wx%imstr
     w%idstr = wx%idstr
     w%lat = wx%lat

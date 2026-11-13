@@ -113,14 +113,16 @@ irrigation and runoff on the test parcels. The original is always one
   16-19) use `RZMAX` all year (`PERENNIAL_ROOTS`). Fallow (15), open water
   (20-21) and farmsteads (22) keep the original equation.
 * `RZMIN` not scaled by soil: capped at the scaled `RZMAX` (`RZMIN_CAP`).
+* Leap years: a leap-aware calendar for SIM dates and monthly totals
+  (`LEAP_CALENDAR`).
+* Tailwater: applies only to furrow irrigation, IRRTYP 4
+  (`TAILWATER_FURROW`).
 
 ## Not fixed yet (need a decision)
 
 These look wrong but the right answer is a modelling choice, so they are
 left as the original for now:
 
-* Leap-year handling (see the earlier code review).
-* Tailwater reuse applies to IRRTYP 4 in one place and 4-5 in another.
 * Irrigation scheduling method 6 (IRRSCH 6).
 * `JSTOPI` / `JGOI` are read in a different order by the Python legacy
   reader than the Fortran reader.

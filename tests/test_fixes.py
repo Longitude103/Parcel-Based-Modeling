@@ -352,6 +352,53 @@ def test_rzmin_cap(kernel, inp):
         b = kernel.run_year(sim, inp.soils[code], w, inp.initial, fixes=Fix.RZMIN_CAP)
         assert a.annual == b.annual
 
+
+def test_leap_calendar(kernel, inp):
+    """2012: the original's 365-day tables end the run on Dec 30 (day 365),
+    plant a day early and bin Feb 29 into March. With the fix the dates and
+    the monthly totals follow the real calendar; 2011 is unchanged."""
+    sim = sc.scenarios()["corn_pivot"]
+    w = inp.weather[2012]
+    off = kernel.run_year(sim, inp.soils[622], w, inp.initial)
+    on = kernel.run_year(sim, inp.soils[622], w, inp.initial, fixes=Fix.LEAP_CALENDAR)
+    assert (off.annual["jdyend"], on.annual["jdyend"]) == (365, 366)
+    assert on.annual["jdyplt"] == off.annual["jdyplt"] + 1     # May 5 is day 126 in 2012
+    first = {False: [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365],
+             True: [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366]}
+    for r, leap in ((off, False), (on, True)):
+        b = first[leap]
+        for m in range(12):
+            month = sum(r.daily["etr"][b[m]:b[m + 1]])
+            assert r.monthly["etrmon"][m] == pytest.approx(month, abs=1e-4), (leap, m)
+    assert on.daily["etr"][365] > 0 and off.daily["etr"][365] == 0
+    # Not a leap year: identical.
+    a = kernel.run_year(sim, inp.soils[622], inp.weather[2011], inp.initial)
+    b = kernel.run_year(sim, inp.soils[622], inp.weather[2011], inp.initial,
+                        fixes=Fix.LEAP_CALENDAR)
+    assert a.annual == b.annual and a.monthly == b.monthly
+
+
+def test_tailwater_furrow(kernel, inp):
+    """Rotation deliveries (IRRSCH 3): the original takes tailwater losses
+    and reuse for IRRTYP 4 and 5; with the fix only furrow (4) does, as in
+    demand scheduling."""
+    w = inp.weather[2012]
+    border = sc.scenarios()["corn_border"]                 # IRRTYP 5
+    k = 0                                                  # same for every stage
+    tail = 1.0 - (1.0 - border.ereuse[k])*border.prunof[k]
+    for fixes, factor in ((Fix.NONE, tail), (Fix.TAILWATER_FURROW, border.eapp[k])):
+        r = kernel.run_year(border, inp.soils[622], w, inp.initial, fixes=fixes)
+        days = [d for d in season(r) if r.daily["grirr"][d] > 0]
+        assert days
+        for d in days:
+            assert r.daily["irrinf"][d] == pytest.approx(r.daily["grirr"][d]*factor, rel=1e-5)
+    # Furrow (IRRTYP 4) keeps its tailwater.
+    furrow = sc._sim("CRNIRR01", irrtyp=4, irrsch=3, jfirst=150, jstopi=0, jgoi=0,
+                     jdfreq=10, ddepth=2.0, ereuse=[0.3] * 5, prunof=[0.25] * 5)
+    a = kernel.run_year(furrow, inp.soils[622], w, inp.initial)
+    b = kernel.run_year(furrow, inp.soils[622], w, inp.initial, fixes=Fix.TAILWATER_FURROW)
+    assert a.annual == b.annual
+
 @pytest.mark.parametrize("name", list(sc.scenarios()))
 def test_all_fixes_close_the_water_balance(kernel, inp, name):
     """With every fix on, storage change equals inflow minus outflow for

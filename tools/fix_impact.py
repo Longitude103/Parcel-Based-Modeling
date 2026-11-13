@@ -266,6 +266,11 @@ def main() -> None:
         "are against meaningless numbers; with the fix they give a season water budget "
         "close to the Jan 1 alfalfa (`alfalfa_pivot`), shortened by the later start. RZMIN_CAP changes only `corn_shallow_roots` on soil 421, the one case "
         "where RZMIN is deeper than the soil-scaled RZMAX.",
+        "* **LEAP_CALENDAR** changes 2012, the one leap year in the fixtures, in every "
+        "run (the run gains Dec 31 and the dates move), and later years through the soil "
+        "state carried over from Dec 31 instead of Dec 30.",
+        "* **TAILWATER_FURROW** changes only `corn_border`, the one IRRTYP 5 setup on "
+        "rotation scheduling.",
         "* **SNOWMELT_BASE** touches every run because snow melted at 0 F instead of 32 F, "
         "so the original melted snow on most winter days.",
         "",

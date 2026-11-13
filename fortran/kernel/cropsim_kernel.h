@@ -48,6 +48,8 @@ extern "C" {
 #define CSK_FIX_FALLOW_CROP               32768  /* Summer fallow (crop 15) stays fallow; the original turned dryland fallow into winter wheat at the end of the year (original DEPLT 2719-2732). */
 #define CSK_FIX_PERENNIAL_ROOTS           65536  /* Perennial covers (crops 10-14, 16-19) keeps its roots at RZMAX all year; the original grew them with GDDFLO, which these crops never set (original ROOTZN 1742). */
 #define CSK_FIX_RZMIN_CAP                131072  /* RZMIN is capped at the soil-scaled RZMAX, so roots never start deeper than the soil allows (original 849-856 scales RZMAX only). */
+#define CSK_FIX_LEAP_CALENDAR            262144  /* Leap years use a 366-day calendar for SIM dates and monthly totals; the original's 365-day tables shift every SIM date after February a day early, count Feb 29 in March and never reach Dec 31 (original DAYOFYR, CALDAY). */
+#define CSK_FIX_TAILWATER_FURROW         524288  /* Tailwater runoff and reuse apply only to furrow irrigation (IRRTYP 4), as in demand scheduling; the original's rotation delivery also applied them to IRRTYP 5 (original IRRIGA 2857). */
 
 /* BLOCK.DAT and TILLAGE.DAT. */
 typedef struct {

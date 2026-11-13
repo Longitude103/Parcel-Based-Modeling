@@ -41,5 +41,10 @@ test-extras = ["test"]
 test-command = "pytest {project}/tests"
 
 [tool.cibuildwheel.linux]
-before-all = "yum install -y gcc-gfortran || dnf install -y gcc-gfortran"
+# manylinux_2_28 ships gfortran in its gcc-toolset; the older manylinux2014
+# system gfortran (4.8) cannot compile the kernel (Fortran 2018).
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+before-all = "command -v gfortran || dnf install -y gcc-gfortran; gfortran --version"
+environment = { FC = "gfortran" }
 

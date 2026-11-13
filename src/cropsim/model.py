@@ -200,6 +200,8 @@ class Result:
     monthly: dict[str, list[float]]
     weekly: dict[str, list[float]]
     state: State
+    daily: dict[str, list[float]] | None = None
+    """Daily series by day of year (kernel only)."""
 
 
 def _fill(arr, values) -> None:

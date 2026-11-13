@@ -3,7 +3,8 @@
 Builds the frozen original (with only its hard-coded paths changed), runs it
 on the fixtures, then repeats the same runs through the library and compares
 the yearly, monthly and weekly output files and the final INITIAL.DAT text
-character for character.
+character for character. The compute kernel (no fixes) is checked the same
+way.
 """
 
 import shutil
@@ -22,10 +23,17 @@ def outputs(tmp_path_factory):
     exe = legacy_run.build_original(work)
     run = work / "run"
     legacy_run.make_run_dir(run)
-    return legacy_run.run_original(exe, run), legacy_run.run_library()
+    return (legacy_run.run_original(exe, run), legacy_run.run_library(),
+            legacy_run.run_library(use_kernel=True))
 
 
 @pytest.mark.parametrize("name", ["yr", "mon", "weekly", "initial"])
 def test_matches_original(outputs, name):
-    original, library = outputs
+    original, library, _ = outputs
     assert library[name].splitlines() == original[name].splitlines()
+
+
+@pytest.mark.parametrize("name", ["yr", "mon", "weekly", "initial"])
+def test_kernel_matches_original(outputs, name):
+    original, _, kernel = outputs
+    assert kernel[name].splitlines() == original[name].splitlines()

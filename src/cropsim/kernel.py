@@ -53,6 +53,7 @@ class Fix(enum.IntFlag):
     FALLOW_CROP = 32768
     """Summer fallow (crop 15) stays fallow; the original turned dryland fallow into winter wheat at the end of the year (original DEPLT 2719-2732)."""
 
+
 ALL_FIXES = Fix(0)
 for _f in Fix:
     ALL_FIXES |= _f

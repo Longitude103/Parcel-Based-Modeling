@@ -295,3 +295,13 @@ def test_fallow_crop(kernel, inp):
         assert r.crop_yr == 15 and r.crop_mon == 15
     # The water balance of the year itself is the same.
     assert [r.annual["ets"] for r in off] == [r.annual["ets"] for r in on]
+
+
+@pytest.mark.parametrize("name", list(sc.scenarios()))
+def test_all_fixes_close_the_water_balance(kernel, inp, name):
+    """With every fix on, storage change equals inflow minus outflow for
+    every parcel and year (to float rounding)."""
+    for soil in sc.SOILS:
+        for r in chain(kernel, inp, name, soil=soil, fixes=ALL_FIXES):
+            assert r.status == 0
+            assert abs(r.annual["balerr"]) < 1e-3, (name, soil, r.year, r.annual["balerr"])

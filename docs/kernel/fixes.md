@@ -25,6 +25,7 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 8 | 256 | `DRAINAGE_SPREAD` | DP and soil water where layers sit at field capacity (mostly wetlands); closes the water balance |
 | 9 | 512 | `KNOWN_DATE_RAIN` | Known-date irrigation runs (IRRTYP 2): effective rain, so DP and ET |
 | 10 | 1024 | `RESIDUE_CN` | Row crops after maturity: runoff, so infiltration and DP |
+| 11 | 2048 | `IRRIGATION_DEPTH` | Demand-scheduled irrigation depth, so NIR, DP and ET |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -230,3 +231,25 @@ post-harvest runoff is too low where there is residue.
 unchanged and runoff after maturity is higher with the fix on.
 
 Suspected in the technical reference; confirmed.
+
+## IRRIGATION_DEPTH: irrigation sized from the whole profile
+
+**Original** (IRRIGA 2804, 2892, 2953). Demand scheduling decides to
+irrigate when today's depletion of the management zone (`AWDPLN`, the
+top `RZMGMT` of the root zone) passes the allowable depletion, but sizes
+the net irrigation from `DPLN`: the depletion of the whole 10-layer
+profile at the end of the previous day. That is usually larger (deeper
+soil, and before today's rain), so each irrigation refills more than the
+management zone needs; `APMAX` hides most of it in practice.
+
+**Fix.** Size the net irrigation from `AWDPLN`, the same depletion that
+triggers it.
+
+**Test.** `test_irrigation_depth`: corn with no rain allowance and no
+practical application limits; on dry days with no root growth the net
+irrigation equals yesterday's whole-profile depletion with the fix off,
+and the management-zone depletion with it on, and the average irrigation
+is smaller with the fix on.
+
+**Check with NeDNR.** This may be intended (refill the whole profile). The
+earlier review flagged it as "check intent"; the switch lets both be run.

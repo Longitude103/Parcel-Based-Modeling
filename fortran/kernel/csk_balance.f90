@@ -33,7 +33,7 @@ contains
   !---------------------------------------------------------------------
   subroutine irrigate(w)
     type(csk_work_t), intent(inout) :: w
-    real :: rainstor, cyclet, soilmd, forcrain
+    real :: rainstor, cyclet, soilmd, forcrain, depletion
     integer :: istage, jdsch, jday
 
     jday = w%jday
@@ -42,13 +42,21 @@ contains
     istage = w%kstg
     if (w%kstg == 0) istage = w%icut
     rainstor = w%rainal(istage) * w%dpla
+    ! Depletion the net irrigation is sized from. The original used DPLN,
+    ! the whole-profile depletion at the end of the previous day, though
+    ! the trigger is today's management-zone depletion AWDPLN.
+    if (fix_on(w, FIX_IRRIGATION_DEPTH)) then
+      depletion = w%awdpln
+    else
+      depletion = w%dpln
+    end if
 
     select case (w%irrsch)
     case (:2)
       if (w%awdpln < w%dpla) return
       if ((w%gdd < w%gstart) .or. (w%gdd >= w%gstop)) return
       if (w%today + 1 < w%jnexti) return
-      w%netirr = w%dpln - rainstor
+      w%netirr = depletion - rainstor
       call size_demand_irrigation(.true.)
 
     case (3)
@@ -82,7 +90,7 @@ contains
       if ((w%awdpln - forcrain) < w%dpla) then
         w%netirr = 0.
       else
-        w%netirr = max(w%dpln - rainstor, 0.)
+        w%netirr = max(depletion - rainstor, 0.)
       end if
       call size_demand_irrigation(.false.)
 
@@ -96,7 +104,7 @@ contains
       if ((w%awdpln < w%dpla) .or. (forcrain > 1.0)) then
         w%netirr = 0.
       else
-        w%netirr = max(w%dpln - rainstor, 0.)
+        w%netirr = max(depletion - rainstor, 0.)
       end if
       call size_demand_irrigation(.false.)
     end select

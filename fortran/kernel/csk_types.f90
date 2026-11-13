@@ -71,6 +71,9 @@ module csk_types
   ! After maturity the residue factor is applied to the curve number
   ! once, not twice (original EFPRECIP 1641).
   integer, parameter, public :: FIX_RESIDUE_CN = 1024
+  ! Demand irrigation is sized from today's management-zone depletion,
+  ! not yesterday's whole-profile depletion (original IRRIGA 2804, 2892, 2953).
+  integer, parameter, public :: FIX_IRRIGATION_DEPTH = 2048
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).

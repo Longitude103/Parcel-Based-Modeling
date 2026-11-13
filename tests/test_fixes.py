@@ -205,3 +205,27 @@ def test_residue_cn(kernel, inp):
         assert sum(b.daily["runoff"][mat:]) >= sum(a.daily["runoff"][mat:])
         more += sum(b.daily["runoff"][mat:]) - sum(a.daily["runoff"][mat:])
     assert more > 0.05
+
+
+def test_irrigation_depth(kernel, inp):
+    """Net irrigation equals yesterday's whole-profile depletion (off) or
+    the management-zone depletion (on), on dry days with no root growth."""
+    sim = sc.scenarios()["corn_pivot"].copy()
+    sim.rainal, sim.apmin, sim.apmax, sim.smalli = [0.0] * 5, [0.0] * 5, [10.0] * 5, [0.01] * 5
+    checked = 0
+    for fixes, key in ((Fix.NONE, "dpln"), (Fix.IRRIGATION_DEPTH, "awdpln")):
+        for r in chain(kernel, inp, None, fixes=fixes, sim=sim):
+            d_ = r.daily
+            for d in season(r):
+                if (d_["nirr"][d] > 0 and d_["precip"][d] == 0 and d_["snow"][d - 1] == 0
+                        and d_["rzd"][d] == d_["rzd"][d - 1]):
+                    assert d_["nirr"][d] == pytest.approx(d_[key][d - 1], rel=1e-5), (fixes, d)
+                    checked += 1
+    assert checked > 20
+    # The whole profile is deeper than the management zone, so the
+    # original applied more water per irrigation.
+    off = chain(kernel, inp, None, sim=sim)
+    on = chain(kernel, inp, None, fixes=Fix.IRRIGATION_DEPTH, sim=sim)
+    per = [sum(r.annual["snirr"] for r in rs) / sum(r.annual["irigno"] for r in rs)
+           for rs in (off, on)]
+    assert per[1] < per[0]

@@ -41,6 +41,7 @@ extern "C" {
 #define CSK_FIX_DRAINAGE_SPREAD             256  /* Water held back from drainage is spread over exactly the layers that receive it (original DEPLT 2386-2432). */
 #define CSK_FIX_KNOWN_DATE_RAIN             512  /* Known-date irrigation runs (IRRTYP 2) keep runoff and snow out of effective rain (original DEPLT 2032). */
 #define CSK_FIX_RESIDUE_CN                 1024  /* After maturity the residue factor is applied to the curve number once, not twice (original EFPRECIP 1641). */
+#define CSK_FIX_IRRIGATION_DEPTH           2048  /* Demand irrigation is sized from today's management-zone depletion, not yesterday's whole-profile depletion (original IRRIGA 2804, 2892, 2953). */
 
 /* BLOCK.DAT and TILLAGE.DAT. */
 typedef struct {

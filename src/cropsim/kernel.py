@@ -42,6 +42,8 @@ class Fix(enum.IntFlag):
     """Known-date irrigation runs (IRRTYP 2) keep runoff and snow out of effective rain (original DEPLT 2032)."""
     RESIDUE_CN = 1024
     """After maturity the residue factor is applied to the curve number once, not twice (original EFPRECIP 1641)."""
+    IRRIGATION_DEPTH = 2048
+    """Demand irrigation is sized from today's management-zone depletion, not yesterday's whole-profile depletion (original IRRIGA 2804, 2892, 2953)."""
 
 ALL_FIXES = Fix(0)
 for _f in Fix:

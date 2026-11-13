@@ -613,12 +613,16 @@ contains
       itries = 1
       if (wavail <= t) then
         ! Demand exceeds the water available: take the root zone to PWP.
+        ! The original kept T at the demand (more than was taken) and also
+        ! raised any root-zone layer already below PWP up to it.
         do k = 1, w%layers
+          if (fix_on(w, FIX_TRANSPIRATION_LIMIT) .and. w%theta(k) <= w%pwp(k)) cycle
           w%theta(k) = w%pwp(k)*w%perrzd(k) + w%theta(k)*(1.0 - w%perrzd(k))
           perdep(k) = 1.0
         end do
         w%dpln = w%paw
         tuse = wavail
+        if (fix_on(w, FIX_TRANSPIRATION_LIMIT)) t = tuse
         return
       end if
 
@@ -631,7 +635,8 @@ contains
           if (uptake > wavail) then
             ! Not enough water in the layer for its share.
             tuse = tuse + wavail
-            w%theta(k) = w%pwp(k)*w%perrzd(k) + w%theta(k)*(1.0 - w%perrzd(k))
+            if (.not. (fix_on(w, FIX_TRANSPIRATION_LIMIT) .and. w%theta(k) <= w%pwp(k))) &
+              w%theta(k) = w%pwp(k)*w%perrzd(k) + w%theta(k)*(1.0 - w%perrzd(k))
             tflag = .true.
           else
             tuse = tuse + uptake
@@ -643,19 +648,22 @@ contains
           twait = twait + w%rdf(k)*(1.0 - perdep(k))
         end do
 
-        if (.not. tflag) return
+        if (.not. tflag) exit
         tweigh = twait
         trans = t - tuse
-        if (abs(trans) < 0.001) return
+        if (abs(trans) < 0.001) exit
         w%dpln = 0.0
         twait = 0.0
         itries = itries + 1
         tflag = .false.
         if (itries > 20) then
           if (w%status == 0) w%status = CSK_ERR_TRANS_CONV
-          return
+          exit
         end if
       end do
+      ! The original reported the demand T even when the loop stopped up
+      ! to 0.001 in short of it (or failed to converge).
+      if (fix_on(w, FIX_TRANSPIRATION_LIMIT)) t = tuse
     end subroutine transpiration
 
   end subroutine water_balance

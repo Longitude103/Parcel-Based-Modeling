@@ -134,3 +134,16 @@ def test_alfalfa_regrowth(kernel, inp, ):
         assert kc[Fix.ALFALFA_REGROWTH][d] < kc[Fix.NONE][d]
     # The first part of the season is the same.
     assert kc[Fix.NONE][:cut2 - 1] == kc[Fix.ALFALFA_REGROWTH][:cut2 - 1]
+
+
+@pytest.mark.parametrize("name", ["corn_dry", "range"])
+def test_transpiration_limit(kernel, inp, name):
+    """Off: on dry days T is reported larger than the water taken from the
+    soil, so the day's water balance does not close. On: it closes."""
+    leaks = {}
+    for fixes in (Fix.NONE, Fix.TRANSPIRATION_LIMIT):
+        rs = chain(kernel, inp, name, soil=421, fixes=fixes)
+        leaks[fixes] = [r.daily["balerr"][d] for r in rs for d in season(r)
+                        if r.daily["t"][d] > 0 and abs(r.daily["balerr"][d]) > 1e-4]
+    assert leaks[Fix.NONE] and all(x > 0 for x in leaks[Fix.NONE])
+    assert leaks[Fix.TRANSPIRATION_LIMIT] == []

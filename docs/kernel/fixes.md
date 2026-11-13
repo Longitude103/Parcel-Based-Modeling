@@ -20,6 +20,7 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 3 | 8 | `ROTATION_FREQUENCY` | Rotation (IRRSCH 3) delivery count, so NIR, ET, DP |
 | 4 | 16 | `FORAGE_CUTTING_STAGE` | Alfalfa and hay: irrigation limits by cutting, deficits and yield by cutting |
 | 5 | 32 | `ALFALFA_REGROWTH` | Alfalfa with 2 cuttings: KC after the second cutting, so ET |
+| 6 | 64 | `TRANSPIRATION_LIMIT` | Transpiration and ET on water-short days; closes the water balance |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -120,3 +121,24 @@ mid-season KC right after its last cutting.
 **Test.** `test_alfalfa_regrowth`: two-cutting alfalfa; in the days after
 the second cutting KC is lower with the fix on (back at the start of the
 curve), and the season up to that cutting is unchanged.
+
+## TRANSPIRATION_LIMIT: transpiration larger than the water removed
+
+**Original** (DEPLT 2267-2310). When the transpiration demand `T` is more
+than the water available in the root zone, the root zone is taken to the
+wilting point, but `T` keeps the full demand, so more transpiration is
+reported than water leaves the soil. The same step also lifts any root-zone
+layer that evaporation had dried below the wilting point back up to it,
+creating water. When the demand can be met, the uptake loop stops once it
+is within 0.001 in of the demand (or after 20 tries) and still reports the
+full demand.
+
+**Fix.** Report the water actually taken (`TUSE`) as transpiration, and
+leave layers already below the wilting point alone.
+
+**Test.** `test_transpiration_limit`: on dryland corn and range on the
+sandy soil, there are days with transpiration whose water balance is off
+by more than 0.0001 in (always too much ET) with the fix off, and none with
+it on.
+
+This was suspected in the technical reference and is now confirmed.

@@ -56,6 +56,9 @@ module csk_types
   ! Alfalfa with two cuttings measures its final regrowth from cutting 2
   ! (original CROPCO 3137).
   integer, parameter, public :: FIX_ALFALFA_REGROWTH = 32
+  ! Reported transpiration equals the water taken from the soil
+  ! (original DEPLT 2267-2310).
+  integer, parameter, public :: FIX_TRANSPIRATION_LIMIT = 64
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).

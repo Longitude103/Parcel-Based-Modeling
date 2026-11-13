@@ -32,6 +32,8 @@ class Fix(enum.IntFlag):
     """Alfalfa and hay use the current cutting cycle as the growth stage in the water balance (original DEPLT 1880, 1953; ICUT stuck at 1)."""
     ALFALFA_REGROWTH = 32
     """Alfalfa with two cuttings measures its final regrowth from cutting 2 (original CROPCO 3137)."""
+    TRANSPIRATION_LIMIT = 64
+    """Reported transpiration equals the water taken from the soil (original DEPLT 2267-2310)."""
 
 ALL_FIXES = Fix(0)
 for _f in Fix:

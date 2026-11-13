@@ -1,9 +1,15 @@
 # Bug fixes in the CropSim kernel
 
-Each fix is a bit in `options.fixes` (`csk_options_t` in C, `cropsim.Fix`
-in Python). With `fixes = 0` the kernel reproduces the original v8.0
-program exactly; any fix can be switched on alone or with others, so every
-change can be measured against the original.
+Every fix is on by default. Each fix has a bit (`cropsim.Fix` in Python,
+`CSK_FIX_*` in C), and any of them can be turned off to bring back the
+original behaviour, so every change can be measured against the original:
+
+| | Python (`Kernel.run_year`) | C (`csk_options_t`) |
+| --- | --- | --- |
+| All fixes (default) | no `fixes` argument, or `fixes=ALL_FIXES` | `revert = 0` (a zeroed struct) |
+| Original v8.0, exactly | `fixes=Fix.ORIGINAL` (same as `Fix.NONE`) | `revert = CSK_REVERT_ALL` |
+| Revert one fix | `fixes=ALL_FIXES & ~Fix.LEAP_CALENDAR` | `revert = CSK_FIX_LEAP_CALENDAR` |
+| Only some fixes | `fixes=Fix.KC_GDD_LAG \| Fix.SNOWMELT_BASE` | `revert = CSK_REVERT_ALL & ~(...)` |
 
 Each fix has a test in `tests/test_fixes.py` that shows the original
 behaviour with the fix off and the corrected behaviour with it on. How
@@ -32,6 +38,9 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 15 | 32768 | `FALLOW_CROP` | Summer fallow: end-of-year crop, live-crop flag and yield (then next year's wheat logic) |
 | 16 | 65536 | `PERENNIAL_ROOTS` | Perennial covers (crops 10-14, 16-19): root depth, so T, ET, DP; removes a NaN in the original |
 | 17 | 131072 | `RZMIN_CAP` | Shallow soils where RZMIN exceeds the scaled RZMAX: root depth, so T, NIR, DP |
+| 18 | 262144 | `LEAP_CALENDAR` | Leap years: SIM dates after February (a day later), the last day simulated (Dec 31), and monthly totals |
+| 19 | 524288 | `TAILWATER_FURROW` | Rotation-scheduled IRRTYP 5: infiltrated irrigation, so DP and ET |
+| 20 | 1048576 | `FORAGE_CUTOFF` | Native pasture (crop 13) on rotation: summer shut-off and Nov 1 stop, so NIR, ET, DP |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -66,17 +75,16 @@ it on.
 the next known irrigation date, so it is set to 1 before the first
 irrigation in every irrigated run. Demand-scheduled runs then report one
 irrigation too many, and since the count never passes through 1 after an
-irrigation, the first irrigation date `JFIRST` is never recorded. The
-forecast methods (IRRSCH 4 and 5) also count every day that passes the
-date and GDD checks, irrigated or not.
+irrigation, the first irrigation date `JFIRST` is never recorded. (The
+original's forecast methods, IRRSCH 4 and 5, also counted every day that
+passed the date and GDD checks; the kernel no longer accepts them.)
 
 **Fix.** Known irrigation dates use their own index; `IRIGNO` counts only
 days with water applied, and `JFIRST` is the first of them. Water applied
 is unchanged.
 
-**Test.** `test_irrigation_count` for demand, forecast and known-date
-runs: off, the count is the number of irrigated days plus one (much more
-for the forecast method) and `JFIRST` is 0; on, both match the daily
+**Test.** `test_irrigation_count` for demand and known-date runs: off,
+the count is the number of irrigated days plus one and `JFIRST` is 0; on, both match the daily
 irrigation record.
 
 ## ROTATION_FREQUENCY: rotation deliveries ignore the rotation interval
@@ -371,3 +379,80 @@ stay, deeper than the soil's limit.
 20 in (`corn_shallow_roots`). On soil 421 `RZMAX` scales to 14 in; off,
 the roots sit at 16 in, on, at 14 in. Soils 622 and 832, where `RZMIN` is
 below the scaled `RZMAX`, are unchanged.
+
+## LEAP_CALENDAR: no leap years
+
+**Original** (DAYOFYR 1549, CALDAY 1455). Month-day dates from the SIM
+file (planting, start and end of the water balance) become days of the
+year through a fixed 365-day table, and daily values are added to months
+through the same table. The weather is read by day of year: a .WEA file
+holds one row per day, labelled year and day of year (`2012060` is
+Feb 29), with 366 rows in a leap year. In a leap year:
+
+* every SIM date after February lands a day early (May 5 becomes day 125,
+  which is May 4);
+* an end date of Dec 31 becomes day 365, so the last day of weather is
+  never simulated and the state carried into the next year is from Dec 30;
+* Feb 29 is added to March, and the first day of every later month to the
+  month before.
+
+Dates given as days of the year (cutting dates, `JFIRST`, `JSTOPI`, `JGOI`,
+known irrigation dates) are not converted and are not changed by the fix.
+
+**Fix.** Decided by Heath (2026-11-13): use a leap-aware calendar
+(Gregorian rule on the weather year) for both conversions.
+
+**Test.** `test_leap_calendar`: corn in 2012. Off, the run ends on day
+365 and each month's ETR total is the sum over the 365-day table's days;
+on, it ends on day 366, planting is a day later, and each month's total is
+the sum over the real calendar month. 2011 is unchanged.
+
+## TAILWATER_FURROW: tailwater for IRRTYP 5 in rotation scheduling only
+
+**Original** (IRRIGA 2824, 2857, 2911, 2972). Water that infiltrates from
+an irrigation is reduced by tailwater runoff and increased by its reuse
+(`PRUNOF`, `EREUSE`). Demand scheduling applies this only to furrow
+irrigation (`IRRTYP` 4); rotation deliveries (`IRRSCH` 3) apply it to
+`IRRTYP` 4 and 5.
+
+**Fix.** Decided by Heath (2026-11-13): tailwater applies only to furrow
+irrigation (`IRRTYP` 4). Other types infiltrate the net irrigation, as in
+demand scheduling.
+
+**Test.** `test_tailwater_furrow`: border irrigation (`IRRTYP` 5) on
+rotation (`corn_border`). Off, each day's infiltrated water is the gross
+depth times `1 - (1 - EREUSE)*PRUNOF`; on, it is the gross depth times
+`EAPP`. A furrow (`IRRTYP` 4) rotation run is unchanged.
+
+## FORAGE_CUTOFF: rotation shut-off for crops 10-13
+
+**Original** (SIM reader 899-905; DEPLT 2100-2104). Rotation delivery
+(`IRRSCH` 3) can pause in summer, between `JSTOPI` and `JGOI`, while water
+goes to row crops, and stops after Nov 1. The DEPLT test applies both to
+crops 10-12. The SIM reader, though, reads `JSTOPI` and `JGOI` only for
+crops *other than* 10-13 (which never use them) and reads just `JDFREQ
+DDEPTH` for 10-13. So in the original the shut-off never takes effect
+(the values are 0, or left over from the previous SIM file in the run),
+and native pasture (13) has neither the shut-off nor the Nov 1 stop.
+
+**Fix.** Decided by Heath (2026-11-13), in two parts:
+
+* *Reader* (`cropsim.legacy.read_sim`, no switch). The rotation line's
+  layout is taken from the line itself, so no one has to hand-edit a SIM
+  file. Four numbers are read as `JSTOPI JGOI JDFREQ DDEPTH` for any crop.
+  Two numbers are read as `JDFREQ DDEPTH`, the older layout, which means no
+  shut-off, as in the original; a note is logged. Anything else, such as
+  values split over lines, is read as the original reads it. A comment
+  after the numbers is ignored. `cropsim.legacy.upgrade_sim(path)` rewrites
+  a two-number line as `0 0 JDFREQ DDEPTH` (the same results) and keeps a
+  `.bak` copy; the new values can then be edited. The original v8.0
+  program reads only two values for crops 10-13, so it misreads an
+  upgraded forage file; use the backup with it.
+* *Kernel switch.* Crop 13 gets the same shut-off and Nov 1 stop as
+  crops 10-12.
+
+**Test.** `test_forage_cutoff`: native pasture on rotation with a
+shut-off from day 200 to 240 (`range_rotation`). Off, water is delivered
+in the shut-off; on, none is delivered in it or after Nov 1. Irrigated
+pasture (12) already has the shut-off and does not change. The reader and
+upgrade are tested in `tests/test_legacy_sim.py`.

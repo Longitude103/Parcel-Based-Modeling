@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-#define CSK_API_VERSION 1
+#define CSK_API_VERSION 2
 
 /* Status codes (1-4 are the original program's STOP checks). */
 #define CSK_OK              0
@@ -28,8 +28,12 @@ extern "C" {
 #define CSK_ERR_NEG_RUNOFF  4
 #define CSK_ERR_BAD_INPUT  11
 
-/* Bug-fix switches for csk_options_t.fixes (see docs/kernel/fixes.md). */
+/* Bug-fix switches (see docs/kernel/fixes.md). Every fix is on by default:
+   a zeroed csk_options_t runs the corrected model. Set a bit in
+   csk_options_t.revert to turn that fix off, or set revert = CSK_REVERT_ALL
+   for the original v8.0 results. */
 #define CSK_FIX_NONE 0
+#define CSK_REVERT_ALL 0x7FFFFFFF
 #define CSK_FIX_KC_GDD_LAG                    1  /* Crop coefficient uses the day's GDD, not the previous day's (original READWEAT 3693-3697). */
 #define CSK_FIX_SNOWMELT_BASE                 2  /* Snow melts above params%smtmp (default 32 F) instead of an unset SMTMP of 0 F (original SNOWMELT 3994-3999). */
 #define CSK_FIX_IRRIGATION_COUNT              4  /* Irrigation count and first irrigation date count real irrigations (original DEPLT 2123, IRRIGA 2869-2925). */
@@ -46,8 +50,11 @@ extern "C" {
 #define CSK_FIX_INFILTRATION_OUTPUT        8192  /* Monthly infiltration (INFMON) reports the water that soaked in; the original always reported 0 (original DEPLT 2563). */
 #define CSK_FIX_ET_ACCUMULATION           16384  /* Seasonal ET for yield (ETMAX, ETYLD) adds the day's evaporation, not the last computed one (original DEPLT 2201, 2327). */
 #define CSK_FIX_FALLOW_CROP               32768  /* Summer fallow (crop 15) stays fallow; the original turned dryland fallow into winter wheat at the end of the year (original DEPLT 2719-2732). */
-#define CSK_FIX_PERENNIAL_ROOTS           65536  /* Perennial covers (crops 10-14, 16-19) keeps its roots at RZMAX all year; the original grew them with GDDFLO, which these crops never set (original ROOTZN 1742). */
+#define CSK_FIX_PERENNIAL_ROOTS           65536  /* Perennial covers (crops 10-14, 16-19) keep their roots at RZMAX all year; the original grew them with GDDFLO, which these crops never set (original ROOTZN 1742). */
 #define CSK_FIX_RZMIN_CAP                131072  /* RZMIN is capped at the soil-scaled RZMAX, so roots never start deeper than the soil allows (original 849-856 scales RZMAX only). */
+#define CSK_FIX_LEAP_CALENDAR            262144  /* Leap years use a 366-day calendar for SIM dates and monthly totals; the original's 365-day tables shift every SIM date after February a day early, count Feb 29 in March and never reach Dec 31 (original DAYOFYR, CALDAY). */
+#define CSK_FIX_TAILWATER_FURROW         524288  /* Tailwater runoff and reuse apply only to furrow irrigation (IRRTYP 4), as in demand scheduling; the original's rotation delivery also applied them to IRRTYP 5 (original IRRIGA 2857). */
+#define CSK_FIX_FORAGE_CUTOFF            1048576  /* Rotation deliveries (IRRSCH 3) for native pasture (crop 13) follow the same summer shut-off (JSTOPI-JGOI) and Nov 1 stop as alfalfa, hay and irrigated pasture; the original applied them to crops 10-12 only (original DEPLT 2100). */
 
 /* BLOCK.DAT and TILLAGE.DAT. */
 typedef struct {
@@ -112,7 +119,7 @@ typedef struct {
 } csk_state_t;
 
 typedef struct {
-    int32_t fixes;          /* CSK_FIX_* bits */
+    int32_t revert;         /* CSK_FIX_* bits to turn off; 0 = all fixes on */
     int32_t livecond;       /* original LIVECOND rule (same SIM, earlier year) */
     int32_t legacy_round;   /* round the returned state like INITIAL.DAT */
     int32_t reserved;

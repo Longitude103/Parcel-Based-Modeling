@@ -1,13 +1,13 @@
 """Write the golden outputs of the original model for the test parcels.
 
-Runs every scenario in tests/scenarios.py (37 crop/irrigation setups x 3
+Runs every scenario in tests/scenarios.py (36 crop/irrigation setups x 3
 soils x 6 years, each soil carrying its own state) through the reference
 engine: the frozen v8.0 source with only the library edits listed in
 tools/make_engine.py, whose output tests/test_parity.py checks character
 for character against the original program. The annual results and the
 end-of-year state are saved at full precision in tests/golden/original.csv.
 
-The kernel with no fixes must reproduce these (tests/test_kernel.py).
+The kernel with every fix reverted (Fix.ORIGINAL) must reproduce these (tests/test_kernel.py).
 Regenerate only if the reference engine itself changes:
 
     python tools/make_golden.py

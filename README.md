@@ -21,7 +21,7 @@ each known bug fixable by its own switch (`docs/kernel/`). The Python package
 | `docs/kernel/` | Kernel design, bug-fix switches and how much each fix changes results. |
 | `src/cropsim/` | Python package: ctypes binding, input/result objects, readers for the old input files. |
 | `tests/` | Parity test against the original program, kernel golden and bug-fix tests. |
-| `tests/golden/original.csv` | Original model results for 666 test-parcel runs (`tools/make_golden.py`). |
+| `tests/golden/original.csv` | Original model results for 648 test-parcel runs (`tools/make_golden.py`). |
 
 ## Using it
 
@@ -42,15 +42,22 @@ for year in range(2010, 2015):
 
 `Kernel` runs the same model through the compute kernel. It takes the same
 inputs, can run on many threads at once, returns daily series
-(`result.daily`) and a water balance check, and takes bug fixes as switches:
+(`result.daily`) and a water balance check. Every known bug fix is on by
+default; the original program, or the original behaviour of one fix, is a
+switch away:
 
 ```python
 from cropsim import ALL_FIXES, Fix, Kernel
 
 kernel = Kernel(legacy.read_block("BLOCK.DAT"), legacy.read_tillage("TILLAGE.DAT"))
-original = kernel.run_year(sim, soil, weather, state)                   # = original program
-fixed = kernel.run_year(sim, soil, weather, state, fixes=ALL_FIXES)    # every fix on
+fixed = kernel.run_year(sim, soil, weather, state)                           # every fix on
+original = kernel.run_year(sim, soil, weather, state, fixes=Fix.ORIGINAL)    # = original v8.0
+no_leap = kernel.run_year(sim, soil, weather, state,
+                          fixes=ALL_FIXES & ~Fix.LEAP_CALENDAR)              # revert one fix
 ```
+
+From C (or Rust), a zeroed `csk_options_t` runs every fix; set bits in
+`revert` to turn fixes off, or `revert = CSK_REVERT_ALL` for the original.
 
 The `legacy` readers are only a convenience for existing CropSim folders.
 `Block`, `Sim`, `Soil`, `Weather` and `State` are plain dataclasses, so the

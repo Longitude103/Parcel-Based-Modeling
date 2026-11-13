@@ -3,7 +3,7 @@
 Builds the frozen original (with only its hard-coded paths changed), runs it
 on the fixtures, then repeats the same runs through the library and compares
 the yearly, monthly and weekly output files and the final INITIAL.DAT text
-character for character. The compute kernel (no fixes) is checked the same
+character for character. The compute kernel (Fix.ORIGINAL) is checked the same
 way.
 """
 

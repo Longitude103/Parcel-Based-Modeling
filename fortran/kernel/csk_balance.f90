@@ -28,13 +28,13 @@ contains
   !
   !  IRRSCH 1, 2  demand: irrigate at the allowable depletion
   !  IRRSCH 3     rotation: fixed delivery depth DDEPTH
-  !  IRRSCH 4     demand, delayed if the forecast rain covers it
-  !  IRRSCH 5     demand, delayed if forecast rain exceeds 1 inch
+  !  The original's forecast methods (IRRSCH 4 and 5, rain known ahead of
+  !  time) are not supported: run_year rejects them, and IRRSCH 6.
   !---------------------------------------------------------------------
   subroutine irrigate(w)
     type(csk_work_t), intent(inout) :: w
-    real :: rainstor, cyclet, soilmd, forcrain, depletion
-    integer :: istage, jdsch, jday
+    real :: rainstor, cyclet, soilmd, depletion
+    integer :: istage, jday
 
     jday = w%jday
     w%netirr = 0.0
@@ -57,7 +57,7 @@ contains
       if ((w%gdd < w%gstart) .or. (w%gdd >= w%gstop)) return
       if (w%today + 1 < w%jnexti) return
       w%netirr = depletion - rainstor
-      call size_demand_irrigation(.true.)
+      call size_demand_irrigation()
 
     case (3)
       soilmd = w%awdpln - rainstor
@@ -68,7 +68,9 @@ contains
       else
         w%groirr = w%ddepth
         w%netirr = w%ddepth*w%eapp(istage)
-        if (w%irrtyp > 3) then
+        ! The original applied tailwater to IRRTYP 4 and 5 here but only to
+        ! 4 in demand scheduling.
+        if (w%irrtyp == 4 .or. (w%irrtyp == 5 .and. .not. fix_on(w, FIX_TAILWATER_FURROW))) then
           w%dinf = w%groirr*(1.0 - (1.0 - w%ereuse(istage))*w%prunof(istage))
         else
           w%dinf = w%netirr
@@ -80,33 +82,6 @@ contains
         if (fix_on(w, FIX_ROTATION_FREQUENCY)) w%jnexti = real(jday + w%jdfreq)
       end if
 
-    case (4)
-      if (jday < w%jnexti) return
-      if ((w%gdd < w%gstart) .or. (w%gdd >= w%gstop)) return
-      forcrain = 0.0
-      do jdsch = jday + 1, jday + w%nfday
-        forcrain = forcrain + w%precip(jdsch)
-      end do
-      if ((w%awdpln - forcrain) < w%dpla) then
-        w%netirr = 0.
-      else
-        w%netirr = max(depletion - rainstor, 0.)
-      end if
-      call size_demand_irrigation(.false.)
-
-    case (5)
-      if (jday < w%jnexti) return
-      if ((w%gdd < w%gstart) .or. (w%gdd >= w%gstop)) return
-      forcrain = 0.0
-      do jdsch = jday + 1, jday + w%nfday
-        forcrain = forcrain + w%precip(jdsch)
-      end do
-      if ((w%awdpln < w%dpla) .or. (forcrain > 1.0)) then
-        w%netirr = 0.
-      else
-        w%netirr = max(depletion - rainstor, 0.)
-      end if
-      call size_demand_irrigation(.false.)
     end select
 
   contains
@@ -114,16 +89,13 @@ contains
     ! Gross depth from the net requirement, bounded by the smallest,
     ! minimum and maximum application for the stage; then infiltration
     ! (surface systems lose tailwater) and the next allowed day.
-    subroutine size_demand_irrigation(demand)
-      logical, intent(in) :: demand
+    subroutine size_demand_irrigation()
       w%groirr = w%netirr/w%eapp(istage)
       if (w%groirr < w%smalli(istage)) then
         w%netirr = 0.0
         w%groirr = 0.0
         w%dinf = 0.0
-        ! The forecast methods (4, 5) carry on from here in the original,
-        ! so a day with no irrigation still counts in IRIGNO.
-        if (demand .or. fix_on(w, FIX_IRRIGATION_COUNT)) return
+        return
       else
         if (w%groirr < w%apmin(istage)) w%groirr = w%apmin(istage)
         if (w%groirr > w%apmax(istage)) w%groirr = w%apmax(istage)
@@ -274,7 +246,8 @@ contains
           ! after Nov 1 (forage) or maturity (other crops), and not in
           ! the summer shut-off for alfalfa, hay and pasture.
           if (jday < w%jfirst) exit irrigation
-          if ((crop >= 10) .and. (crop <= 12)) then
+          if ((crop >= 10) .and. (crop <= 12) .or. &
+              (crop == 13 .and. fix_on(w, FIX_FORAGE_CUTOFF))) then
             if ((jday > w%jstopi) .and. (jday < w%jgoi)) exit irrigation
             if (jday > 304) exit irrigation
           else
@@ -507,7 +480,7 @@ contains
       w%irgwk(iweek) = w%irgwk(iweek) + w%groirr
 
       ! ---- Monthly totals ----
-      call calday(jday, imon, iday)
+      call calday(jday, imon, iday, leap_calendar(w))
       w%etrmon(imon) = w%etrmon(imon) + w%etr(jday)
       w%emon(imon) = w%emon(imon) + e
       w%tmon(imon) = w%tmon(imon) + t

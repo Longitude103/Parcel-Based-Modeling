@@ -4,7 +4,7 @@
 !  Each routine is the original v8.0 subroutine of the same purpose,
 !  with its module variables replaced by components of the run's
 !  csk_work_t (w). Arithmetic is kept in the original order so that,
-!  with no fixes switched on, results match the original bit for bit.
+!  with every fix reverted, results match the original bit for bit.
 !  Original subroutine names and line numbers are given for each.
 !=======================================================================
 module csk_physics
@@ -12,7 +12,7 @@ module csk_physics
   implicit none
   private
 
-  public :: dayofyr, calday
+  public :: dayofyr, calday, leap_calendar
   public :: prepare_weather, crop_coefficient
   public :: snowmelt, effective_precip, evaporation, infiltrate
   public :: root_zone, mgmt_depletion, soil_temperature, crop_yield
@@ -41,28 +41,47 @@ module csk_physics
 contains
 
   !---------------------------------------------------------------------
-  !  Calendar (DAYOFYR, CALDAY). No leap years, as in the original.
+  !  Calendar (DAYOFYR, CALDAY). The original has no leap years; with
+  !  leap = .true. (LEAP_CALENDAR in a leap year) Feb has 29 days.
   !---------------------------------------------------------------------
-  pure subroutine dayofyr(jday, imon, iday)
+  pure subroutine dayofyr(jday, imon, iday, leap)
     integer, intent(out) :: jday
     integer, intent(in)  :: imon, iday
+    logical, intent(in), optional :: leap
     jday = iday + IDAYS(imon)
+    if (present(leap)) then
+      if (leap .and. imon > 2) jday = jday + 1
+    end if
   end subroutine dayofyr
 
-  pure subroutine calday(jday, imon, iday)
+  pure subroutine calday(jday, imon, iday, leap)
     integer, intent(in)  :: jday
     integer, intent(out) :: imon, iday
-    integer :: j
+    logical, intent(in), optional :: leap
+    integer :: j, offset(12)
+    offset = IDAYS
+    if (present(leap)) then
+      if (leap) offset(3:) = offset(3:) + 1
+    end if
     do j = 1, 12
-      if (jday <= IDAYS(j)) exit
+      if (jday <= offset(j)) exit
     end do
     imon = j - 1
-    iday = jday - IDAYS(imon)
+    iday = jday - offset(imon)
     if (jday > 366) then
       imon = 13
       iday = 0
     end if
   end subroutine calday
+
+  !> True when the leap-aware calendar applies to this run's year.
+  pure logical function leap_calendar(w)
+    type(csk_work_t), intent(in) :: w
+    integer :: y
+    y = w%iyear
+    leap_calendar = fix_on(w, FIX_LEAP_CALENDAR) .and. &
+      (mod(y, 4) == 0 .and. (mod(y, 100) /= 0 .or. mod(y, 400) == 0))
+  end function leap_calendar
 
   !---------------------------------------------------------------------
   !  Weather preparation, growing degree days, development dates, daily
@@ -73,7 +92,7 @@ contains
     real :: tmaxa, tmina, etra, precipa, t1, t2, gdd, day, rsoa, rsob, rso, deltat
     integer :: i, jday, n
 
-    call dayofyr(w%jdystr, w%imstr, w%idstr)
+    call dayofyr(w%jdystr, w%imstr, w%idstr, leap_calendar(w))
     w%ndays = 0
 
     ! Defaults for the first days (used to replace out-of-range values).

@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from cropsim import _lib
+from cropsim.kernel import REVERT_ALL
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -27,5 +28,7 @@ def test_header_matches_library(tmp_path):
     version, sizes = subprocess.run([str(exe)], capture_output=True, text=True,
                                     check=True).stdout.splitlines()
     lib = _lib.klib()
+    version, revert_all = version.split()
     assert int(version) == lib.csk_version()
+    assert int(revert_all) == REVERT_ALL
     assert [int(s) for s in sizes.split()] == [lib.csk_struct_size(k) for k in range(1, 8)]

@@ -2,8 +2,11 @@
 
 `Kernel` runs the same model as `Engine` but through the re-written kernel:
 no global state (safe to call from many threads), daily results, a water
-balance check, and switches for each known bug fix (`Fix`). With
-``fixes=Fix.NONE`` it gives the original program's results.
+balance check, and switches for each known bug fix (`Fix`).
+
+Every fix is on by default (``fixes=ALL_FIXES``). ``fixes=Fix.ORIGINAL``
+(the same as ``Fix.NONE``) gives the original v8.0 results exactly, and one
+fix can be turned off with ``fixes=ALL_FIXES & ~Fix.LEAP_CALENDAR``.
 """
 
 from __future__ import annotations
@@ -19,6 +22,8 @@ class Fix(enum.IntFlag):
     """Bug-fix switches. Combine with |; see docs/kernel/fixes.md."""
 
     NONE = 0
+    ORIGINAL = 0
+    """No fixes: the original v8.0 program's results (alias of NONE)."""
 
     KC_GDD_LAG = 1
     """Crop coefficient uses the day's GDD, not the previous day's (original READWEAT 3693-3697)."""
@@ -53,14 +58,24 @@ class Fix(enum.IntFlag):
     FALLOW_CROP = 32768
     """Summer fallow (crop 15) stays fallow; the original turned dryland fallow into winter wheat at the end of the year (original DEPLT 2719-2732)."""
     PERENNIAL_ROOTS = 65536
-    """Perennial covers (crops 10-14, 16-19) keeps its roots at RZMAX all year; the original grew them with GDDFLO, which these crops never set (original ROOTZN 1742)."""
+    """Perennial covers (crops 10-14, 16-19) keep their roots at RZMAX all year; the original grew them with GDDFLO, which these crops never set (original ROOTZN 1742)."""
     RZMIN_CAP = 131072
     """RZMIN is capped at the soil-scaled RZMAX, so roots never start deeper than the soil allows (original 849-856 scales RZMAX only)."""
+    LEAP_CALENDAR = 262144
+    """Leap years use a 366-day calendar for SIM dates and monthly totals; the original's 365-day tables shift every SIM date after February a day early, count Feb 29 in March and never reach Dec 31 (original DAYOFYR, CALDAY)."""
+    TAILWATER_FURROW = 524288
+    """Tailwater runoff and reuse apply only to furrow irrigation (IRRTYP 4), as in demand scheduling; the original's rotation delivery also applied them to IRRTYP 5 (original IRRIGA 2857)."""
+    FORAGE_CUTOFF = 1048576
+    """Rotation deliveries (IRRSCH 3) for native pasture (crop 13) follow the same summer shut-off (JSTOPI-JGOI) and Nov 1 stop as alfalfa, hay and irrigated pasture; the original applied them to crops 10-12 only (original DEPLT 2100)."""
 
 
 ALL_FIXES = Fix(0)
 for _f in Fix:
     ALL_FIXES |= _f
+"""Every fix; the default for Kernel.run_year."""
+
+REVERT_ALL = 0x7FFFFFFF
+"""csk_options_t.revert value that turns every fix off (CSK_REVERT_ALL)."""
 
 DAILY = tuple(n[2:] for n in _lib.KDAILY)
 """Names of the daily series in Result.daily (index 0 = Jan 1)."""
@@ -96,9 +111,13 @@ class Kernel:
         return p
 
     def run_year(self, sim: Sim, soil: Soil, weather: Weather, state: State, *,
-                 fixes: Fix | int = Fix.NONE, livecond: bool = False,
+                 fixes: Fix | int = ALL_FIXES, livecond: bool = False,
                  legacy_rounding: bool = False, raise_on_error: bool = True) -> Result:
-        """Run one year; returns results (with .daily) and the end-of-year state."""
+        """Run one year; returns results (with .daily) and the end-of-year state.
+
+        ``fixes`` picks the bug fixes to apply: all of them by default,
+        ``Fix.ORIGINAL`` for the original program's results.
+        """
         n = len(weather.tmax)
         if not 1 <= n <= 366:
             raise ValueError(f"weather must have 1 to 366 days, got {n}")
@@ -110,7 +129,8 @@ class Kernel:
             raise ValueError("at most 20 tillage operations")
         if len(sim.irrigation_events) > 50:
             raise ValueError("at most 50 irrigation events")
-        opt = _lib.OptionsT(fixes=int(fixes), livecond=int(livecond),
+        revert = ~int(fixes) & REVERT_ALL
+        opt = _lib.OptionsT(revert=revert, livecond=int(livecond),
                             legacy_round=int(legacy_rounding))
         out_state = _lib.StateT()
         res = _lib.KResultT()

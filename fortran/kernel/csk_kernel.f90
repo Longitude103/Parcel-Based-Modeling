@@ -42,7 +42,7 @@ contains
       return
     end if
 
-    w%fixes = opt%fixes
+    w%fixes = not(opt%revert)      ! fixes on unless reverted
     call load_params(w, p)
     w%iyear = wx%year
     w%livecond = opt%livecond
@@ -179,7 +179,7 @@ contains
     ! A live crop at the start of the year was planted last fall: its
     ! season starts at spring green-up (March 15).
     if (w%crop == 7) then
-      call dayofyr(w%jdyplt, w%implt, w%idplt)
+      call dayofyr(w%jdyplt, w%implt, w%idplt, leap_calendar(w))
       w%jfplt = w%jdyplt
       if ((w%irrtyp > 1) .or. (w%itflag > 2)) then
         w%livecrop = 1
@@ -202,9 +202,9 @@ contains
     end do
 
     ! ---- Dates and weather (original 1049-1053, READWEAT) ----
-    call dayofyr(w%jdybg, w%imbg, w%idbg)
-    call dayofyr(w%jdyend, w%imend, w%idend)
-    call dayofyr(w%jdyplt, w%implt, w%idplt)
+    call dayofyr(w%jdybg, w%imbg, w%idbg, leap_calendar(w))
+    call dayofyr(w%jdyend, w%imend, w%idend, leap_calendar(w))
+    call dayofyr(w%jdyplt, w%implt, w%idplt, leap_calendar(w))
     w%imstr = wx%imstr
     w%idstr = wx%idstr
     w%lat = wx%lat
@@ -345,6 +345,10 @@ contains
       if ((simp%crop < 1) .or. (simp%crop > NCROP)) return
       if ((simp%layers < 1) .or. (simp%layers > NLAY)) return
       if ((simp%irrtyp < 1) .or. (simp%irrtyp > 5)) return
+      ! Scheduled irrigation (IRRTYP 3-5) supports IRRSCH 1-3 only; the
+      ! original's forecast methods (4, 5) and the unimplemented 6 are
+      ! rejected (decided by Heath, 2026-11-13).
+      if ((simp%irrtyp >= 3) .and. ((simp%irrsch < 1) .or. (simp%irrsch > 3))) return
       if ((simp%ntills < 0) .or. (simp%ntills > NTILL)) return
       if ((simp%kirr < 0) .or. (simp%kirr > NEVENT)) return
       if (simp%crop == 10 .and. ((simp%ncut < 1) .or. (simp%ncut > 5))) return

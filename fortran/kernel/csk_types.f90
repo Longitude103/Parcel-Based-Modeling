@@ -10,9 +10,10 @@
 !      can be made from many threads at once,
 !    * inputs and outputs are BIND(C) structures (see cropsim_kernel.h).
 !
-!  With options%fixes = 0 the kernel reproduces the original program.
-!  Each known bug has its own bit in options%fixes (FIX_* below), so the
-!  original behaviour can always be run next to the corrected one.
+!  Every known bug has its own fix (FIX_* below), and all fixes are on
+!  by default. A bit set in options%revert turns that fix off and
+!  brings back the original behaviour; options%revert = REVERT_ALL
+!  reproduces the original program exactly.
 !=======================================================================
 module csk_types
   use, intrinsic :: iso_c_binding, only: c_int, c_float
@@ -26,7 +27,7 @@ module csk_types
   integer, parameter, public :: NEVENT = 50      ! known irrigation events
   integer, parameter, public :: NTILL = 20       ! tillage operations
 
-  integer(c_int), parameter, public :: CSK_API_VERSION = 1
+  integer(c_int), parameter, public :: CSK_API_VERSION = 2
 
   ! ---- Status codes (1-4 are the original program's STOP checks) ----
   integer(c_int), parameter, public :: CSK_OK             = 0
@@ -36,8 +37,10 @@ module csk_types
   integer(c_int), parameter, public :: CSK_ERR_NEG_RUNOFF = 4
   integer(c_int), parameter, public :: CSK_ERR_BAD_INPUT  = 11
 
-  ! ---- Bug-fix switches (bits of options%fixes) ----
-  ! Bits are added one per fix; see docs/kernel/fixes.md.
+  ! ---- Bug-fix switches (bits of options%revert) ----
+  ! Bits are added one per fix; see docs/kernel/fixes.md. All fixes are
+  ! on unless their bit is set in options%revert.
+  integer(c_int), parameter, public :: REVERT_ALL = huge(0_c_int)
   ! Crop coefficient uses the day's GDD, not the previous day's
   ! (original READWEAT 3693-3697).
   integer, parameter, public :: FIX_KC_GDD_LAG = 1
@@ -86,10 +89,16 @@ module csk_types
   ! Summer fallow (crop 15) stays fallow; the original turned dryland
   ! fallow into winter wheat at the end of the year (original DEPLT 2719-2732).
   integer, parameter, public :: FIX_FALLOW_CROP = 32768
-  ! Perennial covers (crops 10-14, 16-19) keeps its roots at RZMAX all year; the original grew them with GDDFLO, which these crops never set (original ROOTZN 1742).
+  ! Perennial covers (crops 10-14, 16-19) keep their roots at RZMAX all year; the original grew them with GDDFLO, which these crops never set (original ROOTZN 1742).
   integer, parameter, public :: FIX_PERENNIAL_ROOTS = 65536
   ! RZMIN is capped at the soil-scaled RZMAX, so roots never start deeper than the soil allows (original 849-856 scales RZMAX only).
   integer, parameter, public :: FIX_RZMIN_CAP = 131072
+  ! Leap years use a 366-day calendar for SIM dates and monthly totals; the original's 365-day tables shift every SIM date after February a day early, count Feb 29 in March and never reach Dec 31 (original DAYOFYR, CALDAY).
+  integer, parameter, public :: FIX_LEAP_CALENDAR = 262144
+  ! Tailwater runoff and reuse apply only to furrow irrigation (IRRTYP 4), as in demand scheduling; the original's rotation delivery also applied them to IRRTYP 5 (original IRRIGA 2857).
+  integer, parameter, public :: FIX_TAILWATER_FURROW = 524288
+  ! Rotation deliveries (IRRSCH 3) for native pasture (crop 13) follow the same summer shut-off (JSTOPI-JGOI) and Nov 1 stop as alfalfa, hay and irrigated pasture; the original applied them to crops 10-12 only (original DEPLT 2100).
+  integer, parameter, public :: FIX_FORAGE_CUTOFF = 1048576
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).
@@ -159,7 +168,7 @@ module csk_types
   end type csk_state_t
 
   type, bind(c), public :: csk_options_t
-    integer(c_int) :: fixes          ! FIX_* bits
+    integer(c_int) :: revert         ! FIX_* bits to turn off (0: all fixes on)
     integer(c_int) :: livecond       ! 1: original LIVECOND rule applies
     integer(c_int) :: legacy_round   ! 1: round state like INITIAL.DAT
     integer(c_int) :: reserved

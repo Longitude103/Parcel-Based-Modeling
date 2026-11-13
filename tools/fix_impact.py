@@ -1,7 +1,7 @@
 """Measure what each bug fix changes, and by how much, on the test parcels.
 
-Runs every scenario in tests/scenarios.py (37 setups x 3 soils x 6 years,
-666 runs, each soil carrying its own state) through the kernel with no
+Runs every scenario in tests/scenarios.py (36 setups x 3 soils x 6 years,
+648 runs, each soil carrying its own state) through the kernel with no
 fixes, with each fix alone, and with all fixes, and writes the differences
 to docs/kernel/fix-impact.md.
 
@@ -127,7 +127,7 @@ def fix_section(fix: Fix, cmp: dict, base: dict, other: dict, total: int) -> lis
     for key, label in METRICS + COUNTS + [("infmon", "Infiltration (INFMON)"),
                                           ("yield", "Yield"),
                                           ("yldratio", "Yield ratio")]:
-        xs = [cmp["d"][key][r] for r in changed]
+        xs = [cmp["d"][key][r] for r in sorted(changed)]  # sorted: ties pick the same run
         if all((not math.isnan(x)) and abs(x) <= TOL for x in xs):
             continue
         digits = 0 if key in ("irigno", "jfirst") else 3 if key == "yldratio" else 2
@@ -266,6 +266,13 @@ def main() -> None:
         "are against meaningless numbers; with the fix they give a season water budget "
         "close to the Jan 1 alfalfa (`alfalfa_pivot`), shortened by the later start. RZMIN_CAP changes only `corn_shallow_roots` on soil 421, the one case "
         "where RZMIN is deeper than the soil-scaled RZMAX.",
+        "* **LEAP_CALENDAR** changes 2012, the one leap year in the fixtures, in every "
+        "run (the run gains Dec 31 and the dates move), and later years through the soil "
+        "state carried over from Dec 31 instead of Dec 30.",
+        "* **TAILWATER_FURROW** changes only `corn_border`, the one IRRTYP 5 setup on "
+        "rotation scheduling.",
+        "* **FORAGE_CUTOFF** changes only `range_rotation`, native pasture on rotation "
+        "with a summer shut-off.",
         "* **SNOWMELT_BASE** touches every run because snow melted at 0 F instead of 32 F, "
         "so the original melted snow on most winter days.",
         "",

@@ -12,7 +12,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from cropsim import CROP_NAMES, Engine, Kernel
+from cropsim import CROP_NAMES, Engine, Fix, Kernel
 from cropsim import legacy
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -120,12 +120,13 @@ def I(n: int, w: int) -> str:
 def run_library(use_kernel: bool = False) -> dict[str, str]:
     """Repeat the original program's loops with the library.
 
-    use_kernel runs them through the compute kernel (no fixes) instead of
+    use_kernel runs them through the compute kernel (every fix reverted) instead of
     the reference engine.
     """
     block = legacy.read_block(FIX / "BLOCK.DAT")
     tillage = legacy.read_tillage(FIX / "TILLAGE.DAT")
     engine = Kernel(block, tillage) if use_kernel else Engine(block, tillage)
+    extra = {"fixes": Fix.ORIGINAL} if use_kernel else {}
     soils = legacy.read_soils(FIX / "NESOILS.DAT")
     rows = [(s, int(y)) for s, y in (ln.split(",") for ln in
                                      (FIX / "cropping.csv").read_text().split())]
@@ -153,7 +154,7 @@ def run_library(use_kernel: bool = False) -> dict[str, str]:
             if year not in weather_cache:
                 weather_cache[year] = legacy.read_weather(FIX / "wea" / f"{SITE}{year}.WEA")
             r = engine.run_year(sim, soil, weather_cache[year], state, livecond=livecond,
-                                legacy_rounding=True)
+                                legacy_rounding=True, **extra)
             state = r.state
             a, m, w = r.annual, r.monthly, r.weekly
 

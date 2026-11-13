@@ -3,9 +3,11 @@
 Parcel-based groundwater model inputs for Nebraska, built around the CropSim
 soil water balance model.
 
-This repository currently holds **WP3**: the CropSim v8.0 Fortran model,
-frozen, with a Python package (`cropsim`) that runs it one year at a time
-without any of its text input or output files.
+This repository holds the CropSim v8.0 Fortran model, frozen as the
+permanent reference, and **the CropSim compute kernel**: the same model
+rewritten as a thread-safe library with no file I/O and a C interface, with
+each known bug fixable by its own switch (`docs/kernel/`). The Python package
+(`cropsim`) runs both, one year at a time.
 
 ## Layout
 
@@ -14,9 +16,12 @@ without any of its text input or output files.
 | `fortran/original/CROPSIM_V8.0.F90` | The original CropSim v8.0 program, moved from [pyCropSim](https://github.com/Longitude103/pyCropSim) with its git history. **Frozen: never edited.** |
 | `tools/make_engine.py` | Generates the library engine from the frozen original by a short, listed set of edits. |
 | `fortran/src/cropsim_engine.f90` | Generated engine (do not edit by hand). |
-| `fortran/src/cropsim_api.f90` | C-callable driver: `cs_set_block`, `cs_set_tillage`, `cs_run_year`. |
+| `fortran/src/cropsim_api.f90` | C-callable driver for the reference engine: `cs_set_block`, `cs_set_tillage`, `cs_run_year`. |
+| `fortran/kernel/` | The compute kernel (`csk_run_year`) and its C header. See `docs/kernel/README.md`. |
+| `docs/kernel/` | Kernel design, bug-fix switches and how much each fix changes results. |
 | `src/cropsim/` | Python package: ctypes binding, input/result objects, readers for the old input files. |
-| `tests/` | Parity test against the original program, plus engine behaviour tests. |
+| `tests/` | Parity test against the original program, kernel golden and bug-fix tests. |
+| `tests/golden/original.csv` | Original model results for 630 test-parcel runs (`tools/make_golden.py`). |
 
 ## Using it
 
@@ -33,6 +38,18 @@ for year in range(2010, 2015):
     result = engine.run_year(sim, soil, weather, state)
     state = result.state          # carry this soil's state to its next year
     print(year, result.annual["ets"], result.monthly["etmon"])
+```
+
+`Kernel` runs the same model through the compute kernel. It takes the same
+inputs, can run on many threads at once, returns daily series
+(`result.daily`) and a water balance check, and takes bug fixes as switches:
+
+```python
+from cropsim import ALL_FIXES, Fix, Kernel
+
+kernel = Kernel(legacy.read_block("BLOCK.DAT"), legacy.read_tillage("TILLAGE.DAT"))
+original = kernel.run_year(sim, soil, weather, state)                   # = original program
+fixed = kernel.run_year(sim, soil, weather, state, fixes=ALL_FIXES)    # every fix on
 ```
 
 The `legacy` readers are only a convenience for existing CropSim folders.

@@ -187,6 +187,9 @@
       REAL(C_FLOAT),  INTENT(IN) :: P_SNOW(7), P_CNFALLOW(4), P_CN(22,4)
       INTEGER(C_INT) :: ISTAT
 
+!     Start from the clean snapshot, so values left by earlier runs are
+!     not saved with the new parameters.
+      IF (BLOCK_SET) CALL PARM_RESTORE
       ETRFACT = P_ETRFACT
       NFDAY   = P_NFDAY
       YTREND  = P_YTREND
@@ -228,6 +231,7 @@
       INTEGER :: K
 
       ISTAT = CS_OK
+      IF (BLOCK_SET) CALL PARM_RESTORE
       DO K = 1, N
         IF ((CODES(K).LT.1).OR.(CODES(K).GT.80)) THEN
           ISTAT = CS_ERR_BAD_INPUT

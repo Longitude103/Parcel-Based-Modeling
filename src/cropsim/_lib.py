@@ -173,3 +173,76 @@ def lib() -> ctypes.CDLL:
         )
     _LIB = handle
     return handle
+
+
+# ---- Kernel (fortran/kernel, csk_* functions) ----
+# The SIM, soil, weather and state structures have the same layout as the
+# reference engine's, so SimT, SoilT, WeatherT and StateT serve both.
+
+KERNEL_API_VERSION = 1
+
+
+class ParamsT(ctypes.Structure):
+    _fields_ = [
+        ("etrfact", c_float), ("nfday", c_int), ("ytrend", c_int),
+        ("depth", _f(10)),
+        ("ydens", _f(22)), ("resrat", _f(22)), ("spgrav", _f(22)),
+        ("fragil", _i(22)), ("restyp", _i(22)),
+        ("cc", c_float * 660),                       # Fortran cc(22,3,10)
+        ("kcl", _f(22)), ("kcu", _f(22)), ("tbase", _f(22)), ("tceil", _f(22)),
+        ("sftmp", c_float), ("smfmx", c_float), ("smfmn", c_float),
+        ("snocovmx", c_float), ("snocov1", c_float), ("snocov2", c_float),
+        ("timp", c_float),
+        ("cnfallow", _f(4)), ("cn", c_float * 88),   # Fortran cn(22,4)
+        ("tilfac", c_float * 160),                   # Fortran tilfac(80,2)
+        ("smtmp", c_float),
+    ]
+
+
+class OptionsT(ctypes.Structure):
+    _fields_ = [("fixes", c_int), ("livecond", c_int), ("legacy_round", c_int),
+                ("reserved", c_int)]
+
+
+KDAILY = ("d_gdd", "d_kc", "d_rzd", "d_etr", "d_precip", "d_eprecip", "d_runoff",
+          "d_runon", "d_grirr", "d_nirr", "d_irrinf", "d_e", "d_t", "d_et", "d_drain",
+          "d_wetsup", "d_snow", "d_soilw", "d_dpln", "d_awdpln", "d_balerr")
+
+
+class KResultT(ctypes.Structure):
+    _fields_ = (
+        list(ResultT._fields_)
+        + [("JDYBG", c_int), ("JDYEND", c_int), ("WETSUPS", c_float), ("WSMON", _f(12)),
+           ("BALERR", c_float)]
+        + [(n, _f(366)) for n in KDAILY]
+    )
+
+
+_KLIB = None
+
+
+def klib() -> ctypes.CDLL:
+    """The library with the kernel's csk_* signatures declared."""
+    global _KLIB
+    if _KLIB is not None:
+        return _KLIB
+    handle = lib()
+    handle.csk_version.restype = c_int
+    handle.csk_version.argtypes = []
+    handle.csk_struct_size.restype = c_int
+    handle.csk_struct_size.argtypes = [c_int]
+    handle.csk_run_year.restype = c_int
+    handle.csk_run_year.argtypes = [
+        POINTER(ParamsT), POINTER(SimT), POINTER(SoilT), POINTER(WeatherT),
+        POINTER(StateT), POINTER(OptionsT), POINTER(StateT), POINTER(KResultT),
+    ]
+    for which, struct in enumerate((ParamsT, SimT, SoilT, WeatherT, StateT, OptionsT,
+                                    KResultT), start=1):
+        if handle.csk_struct_size(which) != ctypes.sizeof(struct):
+            raise OSError(f"{struct.__name__} layout does not match the kernel "
+                          f"({ctypes.sizeof(struct)} vs {handle.csk_struct_size(which)} bytes)")
+    if handle.csk_version() != KERNEL_API_VERSION:
+        raise OSError(f"kernel API version {handle.csk_version()}, "
+                      f"expected {KERNEL_API_VERSION}")
+    _KLIB = handle
+    return handle

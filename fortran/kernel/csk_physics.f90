@@ -535,7 +535,9 @@ contains
       ! Stage 1 drying.
       w%time = real(jday)
       avail = (w%theta(1) - w%airdry(1))*w%depth(1)
-      if (avail >= w%ep) then
+      ! Written as the original's test (AVAIL < EP goes to the transition)
+      ! so a NaN AVAIL takes the same branch.
+      if (.not. (avail < w%ep)) then
         w%e1 = w%ep
         exit stages
       end if

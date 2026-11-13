@@ -79,9 +79,13 @@ def scenarios() -> dict[str, Sim]:
         "sugarbeet_furrow": _sim("CRNIRR01", crop=5, irrtyp=4, ereuse=[0.3] * 5,
                                  prunof=[0.2] * 5, eapp=[0.7] * 5),
         "sunflower_dry": _sim("CRNDRY01", crop=9),
+        # Shallow roots: on soil 421 RZMAX scales to 14 in, below RZMIN.
+        "corn_shallow_roots": _sim("CRNIRR01", rzmin=16.0, rzmax=20.0, rzmgmt=18.0),
         # Forage
         "alfalfa_pivot": _sim("ALFIRR01"),
         "alfalfa_two_cuts": _sim("ALFIRR01", ncut=2, jdycut=[165, 230, 0, 0, 0]),
+        # Water balance starts after GDD has begun to accrue (planted Apr 1).
+        "alfalfa_spring_start": _sim("ALFIRR01", imbg=4, idbg=15),
         "alfalfa_rotation": _sim("ALFIRR01", irrsch=3, jfirst=120, jstopi=200, jgoi=240,
                                  jdfreq=14, ddepth=1.5),
         "hay_pivot": _sim("ALFIRR01", crop=11, ncut=1, jdycut=[185, 0, 0, 0, 0],

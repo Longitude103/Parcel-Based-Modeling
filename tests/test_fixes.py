@@ -55,3 +55,21 @@ def test_kc_gdd_lag(kernel, inp):
         frz = r.annual["jdyfrz"]
         for d in range(r.annual["jdyplt"], frz - 1):
             assert kc[d] == pytest.approx(corn_kc(gdd[d - lag], sim.gddmat), abs=1e-5), (fixes, d)
+
+
+def test_snowmelt_base(kernel, inp):
+    """Off: snow melts on days below freezing. On: only above SMTMP (32 F)."""
+    melt_below_32 = {}
+    for fixes in (Fix.NONE, Fix.SNOWMELT_BASE):
+        n = 0
+        for r in chain(kernel, inp, "range", fixes=fixes):
+            snow = r.daily["snow"]
+            tmax = inp.weather[r.year].tmax
+            for d in season(r):
+                if d > 0 and r.daily["precip"][d] == 0 and snow[d] < snow[d - 1] - 1e-6:
+                    assert tmax[d] > 0.0
+                    if tmax[d] <= 32.0:
+                        n += 1
+        melt_below_32[fixes] = n
+    assert melt_below_32[Fix.NONE] > 0
+    assert melt_below_32[Fix.SNOWMELT_BASE] == 0

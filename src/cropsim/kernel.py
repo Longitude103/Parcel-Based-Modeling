@@ -22,6 +22,8 @@ class Fix(enum.IntFlag):
 
     KC_GDD_LAG = 1
     """Crop coefficient uses the day's GDD, not the previous day's (original READWEAT 3693-3697)."""
+    SNOWMELT_BASE = 2
+    """Snow melts above params%smtmp (default 32 F) instead of an unset SMTMP of 0 F (original SNOWMELT 3994-3999)."""
 
 ALL_FIXES = Fix(0)
 for _f in Fix:

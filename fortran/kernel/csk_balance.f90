@@ -225,7 +225,11 @@ contains
       ! Rain and snow melt: runoff, then infiltration.
       if ((w%precip(jday) > 0.) .or. (w%snoh2o > 0.0)) then
         w%rain = w%precip(jday)
-        call snowmelt(w, 0.0)
+        if (fix_on(w, FIX_SNOWMELT_BASE)) then
+          call snowmelt(w, w%smtmp)
+        else
+          call snowmelt(w, 0.0)          ! SMTMP was never set in the original
+        end if
         call effective_precip(w, .false.)
         if ((w%eprecip > w%rain) .and. (w%iterrc == 0)) then
           if (w%status == 0) w%status = CSK_ERR_EFF_PRECIP

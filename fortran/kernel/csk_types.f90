@@ -41,6 +41,9 @@ module csk_types
   ! Crop coefficient uses the day's GDD, not the previous day's
   ! (original READWEAT 3693-3697).
   integer, parameter, public :: FIX_KC_GDD_LAG = 1
+  ! Snow melts above params%smtmp (default 32 F) instead of an
+  ! unset SMTMP of 0 F (original SNOWMELT 3994-3999).
+  integer, parameter, public :: FIX_SNOWMELT_BASE = 2
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).

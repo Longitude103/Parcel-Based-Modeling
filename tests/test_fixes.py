@@ -251,3 +251,13 @@ def test_drainage_clock(kernel, inp):
         late[fixes] = n
     assert late[Fix.NONE] > 0
     assert late[Fix.DRAINAGE_CLOCK] == 0
+
+
+def test_infiltration_output(kernel, inp):
+    off = chain(kernel, inp, "corn_pivot", fixes=Fix.NONE)
+    on = chain(kernel, inp, "corn_pivot", fixes=Fix.INFILTRATION_OUTPUT)
+    assert all(sum(r.monthly["infmon"]) == 0 for r in off)
+    for a, b in zip(off, on):
+        soaked = sum(b.daily["eprecip"]) + sum(b.daily["irrinf"])
+        assert sum(b.monthly["infmon"]) == pytest.approx(soaked, rel=1e-5)
+        assert a.annual["drains"] == b.annual["drains"]   # output only

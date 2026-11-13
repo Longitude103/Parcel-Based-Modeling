@@ -46,6 +46,8 @@ class Fix(enum.IntFlag):
     """Demand irrigation is sized from today's management-zone depletion, not yesterday's whole-profile depletion (original IRRIGA 2804, 2892, 2953)."""
     DRAINAGE_CLOCK = 4096
     """The drainage clock restarts only when water soaks in, not on every irrigation check or snow day (original DEPLT 2018-2034, 2146)."""
+    INFILTRATION_OUTPUT = 8192
+    """Monthly infiltration (INFMON) reports the water that soaked in; the original always reported 0 (original DEPLT 2563)."""
 
 ALL_FIXES = Fix(0)
 for _f in Fix:

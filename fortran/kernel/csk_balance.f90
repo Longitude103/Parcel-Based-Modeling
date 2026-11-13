@@ -522,7 +522,11 @@ contains
       w%numirr(imon) = w%irigno
       ! The original added DINF here, after infiltration had already
       ! set it to zero, so INFMON was always 0.
-      w%infmon(imon) = w%infmon(imon) + w%dinf
+      if (fix_on(w, FIX_INFILTRATION_OUTPUT)) then
+        w%infmon(imon) = w%infmon(imon) + w%infday
+      else
+        w%infmon(imon) = w%infmon(imon) + w%dinf
+      end if
       w%wsmon(imon) = w%wsmon(imon) + w%wetsup
       w%wetsups = w%wetsups + w%wetsup
       if (iday <= 1) w%dplmon(imon) = w%dpln

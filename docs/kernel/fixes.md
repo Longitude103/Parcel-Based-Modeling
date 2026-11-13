@@ -27,6 +27,7 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 10 | 1024 | `RESIDUE_CN` | Row crops after maturity: runoff, so infiltration and DP |
 | 11 | 2048 | `IRRIGATION_DEPTH` | Demand-scheduled irrigation depth, so NIR, DP and ET |
 | 12 | 4096 | `DRAINAGE_CLOCK` | Timing of deep percolation (faster); small change in annual DP and ET |
+| 13 | 8192 | `INFILTRATION_OUTPUT` | Monthly infiltration output (INFMON) only |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -272,3 +273,15 @@ drainage happens more than `DRNDAY` days after the last wetting (the
 excess is gone by then, as the formula intends); with it off, it does.
 
 The earlier review measured this at most 0.01 in/month on its inputs.
+
+## INFILTRATION_OUTPUT: monthly infiltration always zero
+
+**Original** (DEPLT 2563). `INFMON` adds `DINF` after the infiltration
+routine has already set it to 0, so monthly infiltration is always
+reported as 0.
+
+**Fix.** Add the day's infiltrated rain and irrigation.
+
+**Test.** `test_infiltration_output`: off, `INFMON` is all zeros; on, it
+sums to the effective rain plus infiltrated irrigation, and nothing else
+changes.

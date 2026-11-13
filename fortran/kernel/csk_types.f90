@@ -77,6 +77,9 @@ module csk_types
   ! The drainage clock restarts only when water soaks in, not on every
   ! irrigation check or snow day (original DEPLT 2018-2034, 2146).
   integer, parameter, public :: FIX_DRAINAGE_CLOCK = 4096
+  ! Monthly infiltration (INFMON) reports the water that soaked in;
+  ! the original always reported 0 (original DEPLT 2563).
+  integer, parameter, public :: FIX_INFILTRATION_OUTPUT = 8192
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).

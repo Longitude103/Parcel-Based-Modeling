@@ -43,6 +43,7 @@ extern "C" {
 #define CSK_FIX_RESIDUE_CN                 1024  /* After maturity the residue factor is applied to the curve number once, not twice (original EFPRECIP 1641). */
 #define CSK_FIX_IRRIGATION_DEPTH           2048  /* Demand irrigation is sized from today's management-zone depletion, not yesterday's whole-profile depletion (original IRRIGA 2804, 2892, 2953). */
 #define CSK_FIX_DRAINAGE_CLOCK             4096  /* The drainage clock restarts only when water soaks in, not on every irrigation check or snow day (original DEPLT 2018-2034, 2146). */
+#define CSK_FIX_INFILTRATION_OUTPUT        8192  /* Monthly infiltration (INFMON) reports the water that soaked in; the original always reported 0 (original DEPLT 2563). */
 
 /* BLOCK.DAT and TILLAGE.DAT. */
 typedef struct {

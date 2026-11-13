@@ -67,6 +67,9 @@ contains
         end if
         w%irigno = w%irigno + 1
         if (w%irigno == 1) w%jfirst = jday
+        ! The original never advanced JNEXTI here, so after the first
+        ! delivery water could come on any day.
+        if (fix_on(w, FIX_ROTATION_FREQUENCY)) w%jnexti = real(jday + w%jdfreq)
       end if
 
     case (4)

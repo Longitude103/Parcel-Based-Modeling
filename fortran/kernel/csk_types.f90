@@ -47,6 +47,9 @@ module csk_types
   ! Irrigation count and first irrigation date count real irrigations
   ! (original DEPLT 2123, IRRIGA 2869-2925).
   integer, parameter, public :: FIX_IRRIGATION_COUNT = 4
+  ! Rotation deliveries (IRRSCH 3) at most every JDFREQ days
+  ! (original DEPLT 2111, JDFREQ read but never used).
+  integer, parameter, public :: FIX_ROTATION_FREQUENCY = 8
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).

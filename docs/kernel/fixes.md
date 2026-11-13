@@ -17,6 +17,7 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 0 | 1 | `KC_GDD_LAG` | Crop coefficients (all crops), so ET |
 | 1 | 2 | `SNOWMELT_BASE` | Snow melt timing, so winter runoff and infiltration |
 | 2 | 4 | `IRRIGATION_COUNT` | Reported irrigation count (IRIGNO) and first irrigation day (JFIRST) only |
+| 3 | 8 | `ROTATION_FREQUENCY` | Rotation (IRRSCH 3) delivery count, so NIR, ET, DP |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -63,3 +64,22 @@ is unchanged.
 runs: off, the count is the number of irrigated days plus one (much more
 for the forecast method) and `JFIRST` is 0; on, both match the daily
 irrigation record.
+
+## ROTATION_FREQUENCY: rotation deliveries ignore the rotation interval
+
+**Original** (DEPLT 2087-2111; JDFREQ read at 901/903 and never used).
+For district rotation delivery (IRRSCH 3), irrigation after the first
+delivery waits for `JNEXTI`, which is set to 1 at the start of the year
+and never advanced. A full `DDEPTH` can therefore be delivered on any
+day the soil is dry enough, not every `JDFREQ` days.
+
+**Fix.** After each delivery the next one is allowed `JDFREQ` days later.
+
+**Test.** `test_rotation_frequency` (soybean, alfalfa and border
+setups): off, deliveries come closer together than `JDFREQ`; on, never.
+
+**Related, not changed in the kernel.** The original reads `JSTOPI` and
+`JGOI` (the summer shut-off) only for crops outside 10-13 but uses them
+only for crops 10-12, so alfalfa and pasture use stale values. The kernel
+takes them from the SIM input as given; the Python `legacy.read_sim`
+reader still follows the original file layout.

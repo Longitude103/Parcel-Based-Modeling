@@ -26,6 +26,8 @@ class Fix(enum.IntFlag):
     """Snow melts above params%smtmp (default 32 F) instead of an unset SMTMP of 0 F (original SNOWMELT 3994-3999)."""
     IRRIGATION_COUNT = 4
     """Irrigation count and first irrigation date count real irrigations (original DEPLT 2123, IRRIGA 2869-2925)."""
+    ROTATION_FREQUENCY = 8
+    """Rotation deliveries (IRRSCH 3) at most every JDFREQ days (original DEPLT 2111, JDFREQ read but never used)."""
 
 ALL_FIXES = Fix(0)
 for _f in Fix:

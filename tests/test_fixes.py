@@ -89,3 +89,17 @@ def test_irrigation_count(kernel, inp, name):
             else:
                 assert r.annual["irigno"] == len(days) + 1
                 assert r.annual["jfirst"] == 0
+
+
+@pytest.mark.parametrize("name", ["soy_rotation", "alfalfa_rotation", "corn_border"])
+def test_rotation_frequency(kernel, inp, name):
+    freq = sc.scenarios()[name].jdfreq
+    gaps = {}
+    for fixes in (Fix.NONE, Fix.ROTATION_FREQUENCY):
+        g = []
+        for r in chain(kernel, inp, name, fixes=fixes):
+            days = [d for d in season(r) if r.daily["grirr"][d] > 0]
+            g += [b - a for a, b in zip(days, days[1:])]
+        gaps[fixes] = g
+    assert min(gaps[Fix.NONE]) < freq
+    assert min(gaps[Fix.ROTATION_FREQUENCY]) >= freq

@@ -1,0 +1,689 @@
+<title>Corn Parcel Week</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Public+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; the walkthrough is a two-pane stepper (calculations | soil column) under a sticky day/step bar.
+   Palette and type match the "How CropSim works" diagram so the two read as a set. */
+:root{
+  --bg:#f4f6f3; --panel:#ffffff; --fg:#1d2420; --muted:#5b6660; --line:#d5dbd6; --chip:#e8ede9;
+  --water:#2a6fb0; --water-soft:#d7e6f4; --heat:#b8700e; --heat-soft:#f5e6cc;
+  --crop:#3d7a3a; --crop-soft:#dcebd8; --soil:#8a6a4a; --soil-1:#d9c7b2; --soil-2:#cbb59b;
+  --runoff:#5a7d94; --accent:#2f5d50; --warn:#a1452a; --warn-soft:#f6e1d9; --ok:#2f7a4a;
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141917; --panel:#1c2320; --fg:#e4ebe6; --muted:#9aa8a0; --line:#2f3934; --chip:#25302b;
+  --water:#6fb0ea; --water-soft:#1d3346; --heat:#e6a541; --heat-soft:#3a2d17;
+  --crop:#7dbb72; --crop-soft:#22331f; --soil:#c4a07a; --soil-1:#4a3c2e; --soil-2:#3f3327;
+  --runoff:#8fb0c4; --accent:#8cc7b3; --warn:#ec9a7c; --warn-soft:#3b2219; --ok:#7fcf98; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141917; --panel:#1c2320; --fg:#e4ebe6; --muted:#9aa8a0; --line:#2f3934; --chip:#25302b;
+  --water:#6fb0ea; --water-soft:#1d3346; --heat:#e6a541; --heat-soft:#3a2d17;
+  --crop:#7dbb72; --crop-soft:#22331f; --soil:#c4a07a; --soil-1:#4a3c2e; --soil-2:#3f3327;
+  --runoff:#8fb0c4; --accent:#8cc7b3; --warn:#ec9a7c; --warn-soft:#3b2219; --ok:#7fcf98; color-scheme:dark}
+
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:36px 64px;display:grid;gap:52px;grid-template-columns:minmax(0,1fr)}
+h1,h2,h3,h4{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(1.9rem,4.2vw,2.8rem);font-weight:800;letter-spacing:-.01em}
+h2{font-size:1.55rem;font-weight:700}
+h3{font-size:1.05rem;font-weight:700}
+p{margin:0;max-width:72ch}
+a{color:var(--accent)}
+code,.mono{font-family:var(--f-mono);font-size:.86em}
+.eyebrow{font-family:var(--f-display);font-size:.76rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.muted{color:var(--muted)}
+section{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+.sec-head{display:grid;gap:8px}
+.num{font-variant-numeric:tabular-nums}
+
+header{display:grid;gap:16px}
+.lede{font-size:1.1rem;max-width:70ch}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.fact{background:var(--panel);padding:12px 14px;display:grid;gap:2px;align-content:start}
+.fact b{font-family:var(--f-display);font-size:1.02rem}
+.fact span{font-size:.84rem;color:var(--muted)}
+.links{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:.92rem}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0}
+.tablebox{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{text-align:right;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top;font-variant-numeric:tabular-nums;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-family:var(--f-display);font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
+tr:last-child td{border-bottom:0}
+td.l,th.l{text-align:left;white-space:normal}
+tr.clickable{cursor:pointer}
+tr.clickable:hover td{background:var(--chip)}
+tr.sel td{background:var(--chip)}
+
+/* week chart */
+.chartbox{overflow-x:auto}
+.chartbox svg{display:block;width:100%;min-width:640px;height:auto}
+svg text{font-family:var(--f-body);fill:var(--fg)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.84rem;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+
+/* stepper */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px;border-bottom:1px solid var(--line);display:grid;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.row .lab{font-family:var(--f-display);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);width:44px}
+button{font:inherit;color:inherit;cursor:pointer}
+.dbtn,.sbtn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:5px 9px;font-size:.84rem;display:inline-flex;gap:6px;align-items:center;font-variant-numeric:tabular-nums}
+.sbtn{min-width:34px;justify-content:center;font-family:var(--f-display);font-weight:700}
+.dbtn[aria-pressed="true"],.sbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.dbtn:focus-visible,.sbtn:focus-visible,.nav button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ev{display:inline-flex;gap:3px}
+.ev b{width:7px;height:7px;border-radius:50%;display:inline-block}
+.nav{display:flex;gap:8px;margin-left:auto}
+.nav button{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:5px 12px;font-size:.84rem}
+.hint{font-size:.8rem;color:var(--muted)}
+
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
+@media (max-width:900px){.stage{grid-template-columns:minmax(0,1fr)}}
+.stephead{display:grid;gap:6px;padding-bottom:6px}
+.stephead .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.84rem;color:var(--muted)}
+.tag{font-family:var(--f-mono);font-size:.74rem;background:var(--chip);border-radius:4px;padding:2px 6px;color:var(--muted)}
+.what{font-size:.98rem}
+.calcs{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+.calc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:grid;gap:10px;min-width:0}
+.calc h4{font-size:.95rem;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.calc h4 .id{font-family:var(--f-mono);font-size:.74rem;color:var(--muted);font-weight:400}
+.eq{overflow-x:auto;padding:4px 2px;font-size:1.06rem}
+.eq math{font-size:1.06em}
+.sub{overflow-x:auto;padding:6px 10px;background:var(--chip);border-radius:6px;font-size:1rem}
+.result{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline}
+.res{font-family:var(--f-mono);font-size:.95rem;background:var(--crop-soft);border-radius:5px;padding:3px 8px}
+.res b{font-weight:500}
+.inputs{font-size:.86rem}
+.inputs td,.inputs th{padding:4px 8px}
+.feeds{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.82rem;color:var(--muted)}
+.feeds button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:1px 9px;font-size:.8rem;color:var(--fg)}
+.note{font-size:.88rem;color:var(--muted)}
+.flag{border:1px solid var(--warn);background:var(--warn-soft);border-radius:8px;padding:10px 14px;font-size:.9rem;display:grid;gap:4px}
+.flag b{color:var(--warn);font-family:var(--f-display)}
+.skip{border:1px dashed var(--line);border-radius:8px;padding:14px 16px;color:var(--muted)}
+.pill{display:inline-block;font-family:var(--f-display);font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:4px;padding:2px 7px}
+.pill.pass{background:var(--crop-soft);color:var(--ok)}
+.pill.fail{background:var(--chip);color:var(--muted)}
+
+/* soil column */
+.colfig{position:sticky;top:calc(env(safe-area-inset-top,0px) + 120px);display:grid;gap:8px}
+@media (max-width:900px){.colfig{position:static}}
+.colfig svg{width:100%;height:auto;display:block}
+.colcap{font-size:.78rem;color:var(--muted)}
+
+.issues{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.issue{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:8px;padding:14px 16px;display:grid;gap:6px;align-content:start}
+.issue h3{font-size:.98rem}
+.issue p{font-size:.9rem}
+.issue .where{font-size:.82rem;color:var(--muted)}
+.issue.none{border-left-color:var(--line)}
+footer{font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;display:grid;gap:6px}
+ol.prov{margin:0;padding-left:20px;display:grid;gap:6px;font-size:.92rem;max-width:80ch}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">Parcel Based Modeling · CropSim v8.0 · worked example</span>
+  <h1 id="h1">One week in an irrigated corn parcel</h1>
+  <p class="lede" id="lede"></p>
+  <div class="facts" id="facts"></div>
+  <div class="links">
+    <a href="https://claude.ai/artifact/B1DrbsU1pn54ezgMCHuwqv" target="_blank" rel="noopener">CropSim v8.0 Technical Reference</a>
+    <a href="https://claude.ai/artifact/YZJLeP4xFejY4SfeXYXAWd" target="_blank" rel="noopener">How CropSim works (diagram)</a>
+    <a href="#walk">Jump to the step-by-step</a>
+  </div>
+</header>
+
+<section aria-labelledby="glance">
+  <div class="sec-head">
+    <span class="eyebrow">The week at a glance</span>
+    <h2 id="glance">What happened to the water</h2>
+    <p class="muted" id="glance-sub"></p>
+  </div>
+  <div class="panel chartbox"><svg id="weekchart" role="img" aria-label="Daily water in and out of the parcel for the week"></svg></div>
+  <div class="legend" id="legend"></div>
+  <div class="tablebox"><table id="daytable"></table></div>
+  <div class="panel chartbox"><svg id="seasonchart" role="img" aria-label="Root-zone depletion through the season with the week highlighted"></svg></div>
+</section>
+
+<section aria-labelledby="setup">
+  <div class="sec-head">
+    <span class="eyebrow">Before the week</span>
+    <h2 id="setup">The parcel going in</h2>
+    <p class="muted">Set once per run. The effective wilting point and the crop calendar are computed by the model at setup; everything else is an input.</p>
+  </div>
+  <div class="tablebox"><table id="layers"></table></div>
+  <div class="tablebox"><table id="settings"></table></div>
+</section>
+
+<section aria-labelledby="walk" id="walk">
+  <div class="sec-head">
+    <span class="eyebrow">Step by step</span>
+    <h2>Every calculation, every day</h2>
+    <p class="muted">Steps are numbered as in the diagram and follow the code's daily order. Every value below was written out by the program while it ran; the substituted equations only lay those values side by side. Use ← → to move through steps (it rolls into the next day), and [ ] to change day.</p>
+  </div>
+  <div class="bar" id="bar">
+    <div class="row" id="days"><span class="lab">Day</span></div>
+    <div class="row" id="stepsrow"><span class="lab">Step</span></div>
+  </div>
+  <div class="stage">
+    <div class="calcs" id="stepbody" aria-live="polite"></div>
+    <aside class="colfig panel" aria-label="Soil water by layer"><div id="colfig"></div></aside>
+  </div>
+</section>
+
+<section aria-labelledby="issues">
+  <div class="sec-head">
+    <span class="eyebrow">Known issues</span>
+    <h2 id="issues">Where known code issues touch this week</h2>
+    <p class="muted">From the 11 Nov code review and the technical reference, plus two found while building this example. Each card says which days and steps carry the effect. Nothing in the model was changed to show them.</p>
+  </div>
+  <div class="issues" id="issuelist"></div>
+</section>
+
+<section aria-labelledby="how">
+  <div class="sec-head">
+    <span class="eyebrow">Provenance</span>
+    <h2 id="how">How these numbers were produced</h2>
+  </div>
+  <ol class="prov" id="prov"></ol>
+</section>
+
+<footer>
+  <span>Source: <code>fortran/original/CROPSIM_V8.0.F90</code> in Longitude103/parcel-based-modeling (frozen, not edited). Trace tooling on branch <code>claude/project-thread-pmmavc</code> under <code>tools/walkthrough/</code>.</span>
+  <span>The full trace for the week (every value on this page and more) is in the trace table attached in the project thread, as CSV and Excel.</span>
+</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script>
+const DATA = /*DATA*/null;
+(function(){
+"use strict";
+const D = DATA, IN = D.inputs, DAYS = D.days;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function dlabel(iso, long){ const [y,m,d] = iso.split('-').map(Number); const dt = new Date(Date.UTC(y,m-1,d));
+  return (long ? DOW[dt.getUTCDay()] + ' ' : '') + MON[m-1] + ' ' + d; }
+function f(v, d){ if (v === undefined || v === null || Number.isNaN(v)) return '–';
+  if (d === undefined) { const a = Math.abs(v); d = a >= 1000 ? 0 : a >= 100 ? 1 : a >= 10 ? 2 : a >= 1 ? 3 : 4; }
+  return Number(v).toFixed(d); }
+function tex(t, display){ try { return katex.renderToString(t, {output:'mathml', throwOnError:false, displayMode: display !== false}); }
+  catch(e){ return '<code>' + esc(t) + '</code>'; } }
+const T = n => '\\text{' + n + '}';
+const LAYERS = [1,2,3,4,5,6,7,8,9,10];
+const depth = DAYS[0].steps.D0.DEPTH, fc = DAYS[0].steps.D0.FIELDC, pwpE = DAYS[0].steps.D0.PWP_eff;
+const tops = []; { let z = 0; LAYERS.forEach(i => { tops[i] = z; z += depth[i]; }); }
+const g = (day, st, nm) => (day.steps[st] || {})[nm];
+const has = (day, st) => !!day.steps[st];
+
+/* ---------- header ---------- */
+const S0 = D.site, A = D.annual, first = DAYS[0], last = DAYS[6];
+$('#lede').innerHTML = `This page follows one irrigated corn field through seven consecutive days of the original CropSim v8.0 program, ${dlabel(first.date)} to ${dlabel(last.date)}, ${D.year}. For each day it shows every calculation in the order the code runs it: the equation, the values that went in, the value that came out, and which later step uses it. It is the worked counterpart to the technical reference.`;
+const facts = [
+  [S0.where, S0.where_sub],
+  ['Soil ' + IN.soil_code, S0.soil_sub],
+  ['Corn, center pivot', `Planted day ${A.jdyplt}; effective cover day ${A.jdyefc}; maturity day ${A.jdymat}`],
+  [dlabel(first.date) + ' – ' + dlabel(last.date) + ', ' + D.year, `Days of year ${first.jday}–${last.jday}`],
+  [S0.weather, S0.weather_sub],
+  [`${f(A.ets,1)} in ET · ${f(A.snirr,1)} in net irrigation`, `Season totals from the same run; ${f(A.drains,2)} in deep percolation`]
+];
+$('#facts').innerHTML = facts.map(([b,s]) => `<div class="fact"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join('');
+
+/* ---------- week glance ---------- */
+const wk = DAYS.map(d => ({ d, P: g(d,'D0','PRECIP'), Pe: g(d,'D3','EPRECIP') ?? 0, RO: g(d,'D3','RUNOFF') ?? 0,
+  I: g(d,'D10','NETIRR_day'), IG: g(d,'D10','GROIRR_day'), E: g(d,'D7','E') ?? 0, Tr: g(d,'D8','T_final') ?? 0,
+  Dr: g(d,'D9','DRAIN'), ETR: g(d,'D0','ETR'), KC: g(d,'D6','KC'), AWD: g(d,'D10','AWDPLN_end'), DPLA: g(d,'D5','DPLA'),
+  TX: g(d,'D0','TMAX'), TN: g(d,'D0','TMIN') }));
+(function chart(){
+  const W = 900, H = 330, L = 56, R = 16, top = 48, mid = 210, bot = 320;
+  const maxIn = Math.max(0.5, ...wk.map(x => x.P + x.I)), maxOut = Math.max(0.3, ...wk.map(x => x.E + x.Tr + x.Dr + x.RO));
+  const sc = Math.max(maxIn / (mid - top), maxOut / (bot - mid));
+  const cw = (W - L - R) / 7, bw = cw * 0.26;
+  let s = '';
+  const ticks = []; const step = sc * 40 > 0.5 ? 0.5 : sc * 40 > 0.2 ? 0.25 : 0.1;
+  for (let v = 0; v <= maxIn + 1e-9; v += step) ticks.push(v);
+  ticks.forEach(v => { const y = mid - v / sc; s += `<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="${L-8}" y="${y+4}" font-size="11" text-anchor="end" fill="var(--muted)">${v.toFixed(2)}</text>`; });
+  for (let v = step; v <= maxOut + 1e-9; v += step) { const y = mid + v / sc; s += `<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="${L-8}" y="${y+4}" font-size="11" text-anchor="end" fill="var(--muted)">${v.toFixed(2)}</text>`; }
+  s += `<line x1="${L}" x2="${W-R}" y1="${mid}" y2="${mid}" stroke="var(--fg)" stroke-width="1.2"/>`;
+  s += `<text x="12" y="${top+40}" font-size="11.5" fill="var(--muted)" transform="rotate(-90 12 ${top+40})" text-anchor="middle">in, inches</text>`;
+  s += `<text x="${L+4}" y="${top-14}" font-size="12" fill="var(--muted)">Water arriving ↑</text><text x="${L+4}" y="${bot+20}" font-size="12" fill="var(--muted)">Water leaving the root zone ↓</text>`;
+  wk.forEach((x, i) => {
+    const cx = L + cw * i + cw / 2;
+    // in: rain (split into effective + runoff part) and irrigation
+    let y = mid; const h1 = x.Pe / sc, h2 = x.RO / sc, h3 = x.I / sc;
+    s += `<rect x="${cx - bw - 2}" y="${y - h1}" width="${bw}" height="${h1}" fill="var(--water)"/>`;
+    s += `<rect x="${cx - bw - 2}" y="${y - h1 - h2}" width="${bw}" height="${h2}" fill="var(--runoff)" opacity=".55"/>`;
+    s += `<rect x="${cx + 2}" y="${y - h3}" width="${bw}" height="${h3}" fill="var(--accent)"/>`;
+    // out: E, T, drain, runoff
+    let yo = mid; const o = [[x.E,'var(--heat)', .55],[x.Tr,'var(--heat)',1],[x.Dr,'var(--water)',.5],[x.RO,'var(--runoff)',1]];
+    o.forEach(([v,c,op]) => { const h = v / sc; s += `<rect x="${cx - bw/2}" y="${yo}" width="${bw}" height="${h}" fill="${c}" opacity="${op}"/>`; yo += h; });
+    s += `<text x="${cx}" y="${bot + 0}" font-size="12" text-anchor="middle" font-weight="600">${dlabel(x.d.date)}</text>`;
+    const lab = [];
+    if (x.P > 0) lab.push(`${f(x.P,2)} rain`);
+    if (x.I > 0) lab.push(`${f(x.I,2)} irr.`);
+    lab.forEach((t, k) => { s += `<text x="${cx}" y="${14 + k*14}" font-size="11" text-anchor="middle" fill="var(--muted)">${t}</text>`; });
+  });
+  const svg = $('#weekchart'); svg.setAttribute('viewBox', `0 0 ${W} ${bot + 30}`); svg.innerHTML = s;
+  $('#legend').innerHTML = [['var(--water)','Effective rain',1],['var(--runoff)','Runoff (part of rain that leaves)',.7],['var(--accent)','Net irrigation',1],
+    ['var(--heat)','Soil evaporation',.55],['var(--heat)','Transpiration',1],['var(--water)','Deep percolation',.5]]
+    .map(([c,t,o]) => `<span><i style="background:${c};opacity:${o}"></i>${t}</span>`).join('');
+})();
+$('#glance-sub').textContent = (() => {
+  const P = wk.reduce((a,x)=>a+x.P,0), RO = wk.reduce((a,x)=>a+x.RO,0), I = wk.reduce((a,x)=>a+x.I,0),
+        ET = wk.reduce((a,x)=>a+x.E+x.Tr,0), Dr = wk.reduce((a,x)=>a+x.Dr,0), ETR = wk.reduce((a,x)=>a+x.ETR,0);
+  return `Over the seven days: ${f(P,2)} in of rain (${f(RO,2)} in ran off), ${f(I,2)} in of net irrigation, ${f(ET,2)} in of ET against ${f(ETR,2)} in of reference ET, and ${f(Dr,2)} in of deep percolation. Click a row to open that day below.`;
+})();
+$('#daytable').innerHTML = `<thead><tr><th class="l">Day</th><th>Tmax / Tmin °F</th><th>ETr in</th><th>Kc</th><th>Rain in</th><th>Runoff in</th><th>Net irr. in</th><th>Evap. in</th><th>Transp. in</th><th>Deep perc. in</th><th>Mgmt-zone depletion in</th><th>Allowed in</th></tr></thead><tbody>` +
+  wk.map((x,i) => `<tr class="clickable" data-day="${i}" tabindex="0"><td class="l"><b>${dlabel(x.d.date,true)}</b> <span class="muted">· day ${x.d.jday}</span></td><td>${f(x.TX,1)} / ${f(x.TN,1)}</td><td>${f(x.ETR,3)}</td><td>${f(x.KC,3)}</td><td>${f(x.P,2)}</td><td>${f(x.RO,3)}</td><td>${f(x.I,3)}</td><td>${f(x.E,3)}</td><td>${f(x.Tr,3)}</td><td>${f(x.Dr,3)}</td><td>${f(x.AWD,3)}</td><td>${f(x.DPLA,3)}</td></tr>`).join('') + '</tbody>';
+
+(function season(){
+  const se = D.season.filter(x => x.j >= A.jdyplt - 10 && x.j <= A.jdymat + 10);
+  const W = 900, H = 200, L = 56, R = 16, top = 26, bot = 160;
+  const j0 = se[0].j, j1 = se[se.length-1].j, xs = j => L + (j - j0) / (j1 - j0) * (W - L - R);
+  const mx = Math.max(...se.map(x => Math.max(x.AWD, x.DPLA || 0))) * 1.1;
+  const ys = v => top + v / mx * (bot - top);   // depletion drawn downward
+  let s = `<text x="${L}" y="14" font-size="12" fill="var(--muted)">Season context: management-zone depletion (in, deeper = drier) and the allowed depletion that triggers the pivot. Ticks mark irrigations; the band is this week.</text>`;
+  s += `<rect x="${xs(D.d0)-2}" y="${top}" width="${xs(D.d0+6)-xs(D.d0)+4}" height="${bot-top}" fill="var(--chip)"/>`;
+  [0, mx/2, mx].forEach(v => { s += `<line x1="${L}" x2="${W-R}" y1="${ys(v)}" y2="${ys(v)}" stroke="var(--line)"/><text x="${L-8}" y="${ys(v)+4}" font-size="11" text-anchor="end" fill="var(--muted)">${v.toFixed(1)}</text>`; });
+  const path = (key) => se.filter(x => x[key] !== null && x[key] !== undefined).map((x,k) => (k ? 'L' : 'M') + xs(x.j).toFixed(1) + ' ' + ys(x[key]).toFixed(1)).join(' ');
+  s += `<path d="${path('DPLA')}" fill="none" stroke="var(--heat)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+  s += `<path d="${path('AWD')}" fill="none" stroke="var(--water)" stroke-width="2"/>`;
+  se.forEach(x => { if (x.I > 0) s += `<line x1="${xs(x.j)}" x2="${xs(x.j)}" y1="${bot+4}" y2="${bot+14}" stroke="var(--accent)" stroke-width="2"/>`; if (x.P >= 0.5) s += `<circle cx="${xs(x.j)}" cy="${bot+22}" r="${Math.min(6, 1.5 + x.P*2)}" fill="var(--water)" opacity=".7"/>`; });
+  for (let m = 4; m <= 10; m++) { const j = Math.round((Date.UTC(D.year, m, 1) - Date.UTC(D.year,0,1)) / 864e5) + 1; if (j > j0 && j < j1) s += `<text x="${xs(j)}" y="${bot+40}" font-size="11" text-anchor="middle" fill="var(--muted)">${MON[m]} 1</text>`; }
+  s += `<text x="${W-R}" y="${top-4}" font-size="11" text-anchor="end" fill="var(--water)">depletion</text><text x="${W-R}" y="${top+10}" font-size="11" text-anchor="end" fill="var(--heat)">allowed depletion</text>`;
+  const svg = $('#seasonchart'); svg.setAttribute('viewBox', `0 0 ${W} ${bot + 48}`); svg.innerHTML = s;
+})();
+
+/* ---------- setup tables ---------- */
+const d0s = DAYS[0].steps;
+$('#layers').innerHTML = `<thead><tr><th class="l">Layer</th><th>Depth in</th><th>Field capacity</th><th>Wilting point (input)</th><th>Effective wilting point</th><th>Available water AVMFT in</th><th>Plant-available PAWFT in</th><th>Water content, start of week</th></tr></thead><tbody>` +
+  LAYERS.map(i => `<tr><td class="l">${i}</td><td>${f(tops[i],0)}–${f(tops[i]+depth[i],0)}</td><td>${f(fc[i],3)}</td><td>${f(IN.pwp[i-1],3)}</td><td>${f(pwpE[i],3)}</td><td>${f(d0s.D1.AVMFT[i],3)}</td><td>${f(d0s.D1.PAWFT[i],3)}</td><td>${f(d0s.D0.THETA[i],3)}</td></tr>`).join('') +
+  `</tbody><caption style="caption-side:bottom;text-align:left;padding:8px 10px;font-size:.82rem;color:var(--muted)">Effective wilting point: PWP + (FC − PWP)(1 − e<sup>−2.303 r<sup>4.462</sup></sup>), r = layer center ÷ RZMAX (${f(IN.roots.RZMAX,0)} in). Technical reference, Root zone and available water. Water contents are volumetric (in/in).</caption>`;
+const st = (a) => a.join(' / ');
+$('#settings').innerHTML = `<thead><tr><th class="l">Setting</th><th class="l">Value</th><th class="l">Where it is used</th></tr></thead><tbody>` + [
+  ['Planting date (SIM)', `${IN.plant[0]}/${IN.plant[1]} (day ${A.jdyplt})`, 'GDD start, crop calendar'],
+  ['GDD to vegetative / effective cover / flowering / ripening / maturity', `${IN.gdd.GDDVEG} / ${IN.gdd.GDDEFC} / ${IN.gdd.GDDFLO} / ${IN.gdd.GDDRIPE} / ${IN.gdd.GDDMAT} °F·day`, 'Steps 1, 3, 5, 6'],
+  ['GDD base / ceiling (BLOCK.DAT, corn)', `${IN.tbase} / ${IN.tceil} °F`, 'Step 1'],
+  ['Root depth min / max / management; roots start at', `${IN.roots.RZMIN} / ${IN.roots.RZMAX} / ${IN.roots.RZMGMT} in; ${IN.roots.GDDROOT} °F·day`, 'Steps 1, 5, 8'],
+  ['Stress break point TBREAK', `${IN.roots.TBREAK} % of plant-available water`, 'Step 8'],
+  ['Allowable depletion PAD by stage', st(IN.pad.slice(0,3)), 'Step 5'],
+  ['Rain allowance RAINAL; pivot capacity SYSCAP; share of time running IPER', `${IN.rainal[0]}; ${IN.syscap} in/day; ${IN.iper[0]}`, 'Step 5'],
+  ['Application limits APMIN / APMAX; smallest SMALLI; efficiency EAPP', `${IN.apmin[0]} / ${IN.apmax[0]} in; ${IN.smalli[0]} in; ${IN.eapp[0]}`, 'Step 5'],
+  ['Irrigation window GSTART – GSTOP', `${IN.gstart} – ${IN.gstop} °F·day`, 'Step 5'],
+  ['Curve numbers, corn, groups A–D; fallow', `${IN.cn.join(' / ')}; ${IN.cnfallow.join(' / ')}`, 'Step 3'],
+  ['ETr factor ETRFACT', `${IN.etrfact}`, 'Step 1'],
+  ['Crop coefficient limits KCL / KCU (corn)', `${f(d0s.D6.KCL,2)} / ${f(d0s.D6.KCU,2)}`, 'Steps 6, 7, 8'],
+  ['Drainage time DRNDAY / coefficient DRNCOE (by soil, hard-coded)', `${f(d0s.D9.DRAIND,1)} days / ${f(d0s.D9.DCOEFF,2)}`, 'Step 9'],
+  ['Bulk density; saturation 1 − ρ/2.65; air-dry (layers 1, 2)', `${IN.bulkd} g/cm³; ${f(1-IN.bulkd/2.65,3)}; ${IN.airdry.join(', ')}`, 'Steps 3, 7']
+].map(r => `<tr><td class="l">${r[0]}</td><td class="l num">${r[1]}</td><td class="l muted">${r[2]}</td></tr>`).join('') + '</tbody>';
+
+/* ---------- step builders ---------- */
+const STEPNAMES = ['', 'Growth stage and roots', 'Snow', 'Runoff and effective precipitation', 'Infiltration', 'Irrigation decision',
+  'Crop coefficient, residue, soil temperature', 'Soil evaporation', 'Transpiration and stress', 'Redistribution and drainage', 'Daily totals'];
+const ROUTINE = ['', 'ROOTZN', 'SNOWMELT', 'EFPRECIP', 'NTHET', 'DEPLT · IRRIGA · NTHET', 'CROPCO (setup) · SOILTEMP', 'EVAP', 'DEPLT', 'DEPLT', 'DEPLT'];
+const SECTION = ['', 'Root zone and available water', 'Snow accumulation and melt', 'Runoff and effective precipitation', 'Infiltration', 'Irrigation scheduling',
+  'Crop coefficients', 'Soil evaporation', 'Transpiration, water stress and root uptake', 'Redistribution and deep percolation', 'Outputs and accounting'];
+const LINES = ['', '1733–1803', '3907–4022', '1607–1728', '1561–1602', '2040–2147, 2774–2990', '3693–3697, 3049–3057, 2153–2181', '2195–2208, 1478–1542', '2216–2343', '2377–2436', '2437–2560'];
+
+function calc(o){
+  let h = `<div class="calc"><h4>${o.title}${o.id ? `<span class="id">${o.id}</span>` : ''}</h4>`;
+  if (o.text) h += `<p class="what">${o.text}</p>`;
+  const split = e => (e.length > 80 ? e.split('\\qquad').map(x => x.trim().replace(/,$/, '')) : [e]);
+  if (o.eq) h += (Array.isArray(o.eq) ? o.eq : [o.eq]).flatMap(split).map(e => `<div class="eq">${tex(e)}</div>`).join('');
+  if (o.sub) h += `<div class="sub">${split(o.sub).map(e => tex(e)).join('')}</div>`;
+  if (o.table) h += o.table;
+  if (o.res) h += `<div class="result">` + o.res.map(r => `<span class="res">${r[0]} = <b>${r[1]}</b>${r[2] ? ' ' + r[2] : ''}</span>`).join('') + `</div>`;
+  if (o.inputs && o.inputs.length) h += `<div class="tablebox" style="border:0"><table class="inputs"><thead><tr><th class="l">Input</th><th>Value</th><th class="l">Units</th><th class="l">Comes from</th></tr></thead><tbody>` +
+    o.inputs.map(r => `<tr><td class="l"><code>${r[0]}</code></td><td>${r[1]}</td><td class="l muted">${r[2] || ''}</td><td class="l muted">${r[3] || ''}</td></tr>`).join('') + `</tbody></table></div>`;
+  if (o.feeds && o.feeds.length) h += `<div class="feeds">Feeds ${o.feeds.map(x => `<button data-goto="${x[0]}" type="button">Step ${x[0]} · ${x[1]}</button>`).join('')}</div>`;
+  if (o.note) h += `<p class="note">${o.note}</p>`;
+  if (o.flag) h += `<div class="flag"><b>${o.flag[0]}</b><span>${o.flag[1]}</span></div>`;
+  return h + `</div>`;
+}
+const skip = t => `<div class="skip">${t}</div>`;
+const layerTable = (cols, rows) => `<div class="tablebox" style="border:0"><table class="inputs"><thead><tr>${cols.map((c,k) => `<th${k ? '' : ' class="l"'}>${c}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c,k) => `<td${k ? '' : ' class="l"'}>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+const yesterday = i => i > 0 ? 'yesterday, Step 9' : 'previous day, Step 9';
+
+function step1(day, i){
+  const W = day.W, s = day.steps, out = [];
+  out.push(calc({ id:'Weather · ETr', title:'Reference ET for the day', eq:'ET_r = ETRFACT \\times ET_{r,\\,input}',
+    sub:`${f(W.W1.ETR,4)} = ${f(W.W1.ETRFACT,2)} \\times ${f(W.W1.ETR_raw,3)}`, res:[['ETR', f(W.W1.ETR,4), 'in/day']],
+    inputs:[['ETR (file)', f(W.W1.ETR_raw,3), 'in/day', 'Weather file, alfalfa reference'], ['ETRFACT', f(W.W1.ETRFACT,2), '', 'BLOCK.DAT']],
+    feeds:[[7,'potential evaporation'],[8,'potential transpiration']], note:'Scaled once for the whole year when the weather is read.' }));
+  out.push(calc({ id:'Weather · GDD', title:'Growing degree days',
+    eq:['GDD_j = \\frac{\\min(\\max(T_{max},T_{base}),T_{ceil}) + \\min(\\max(T_{min},T_{base}),T_{ceil})}{2} - T_{base}', 'GDDS_j = GDDS_{j-1} + GDD_j'],
+    sub:`GDD_j = \\frac{${f(W.W2.T1,1)} + ${f(W.W2.T2,1)}}{2} - ${f(IN.tbase,0)} = ${f(W.W2.GDD_day,2)},\\qquad GDDS_j = ${f(day.prevGDDS,2)} + ${f(W.W2.GDD_day,2)} = ${f(W.W2.GDDS,2)}`,
+    res:[['GDD', f(W.W2.GDD_day,2), '°F·day'], ['GDDS', f(W.W2.GDDS,2), '°F·day since planting']],
+    inputs:[['TMAX', f(s.D0.TMAX,1), '°F', 'Weather file'], ['TMIN', f(s.D0.TMIN,1), '°F', 'Weather file'], ['TBASE / TCEIL', `${IN.tbase} / ${IN.tceil}`, '°F', 'BLOCK.DAT (corn)'], ['GDDS yesterday', f(day.prevGDDS,2), '°F·day', 'This step, yesterday']],
+    feeds:[[1,'stage and root depth'],[3,'curve number'],[5,'irrigation window'],[6,'crop coefficient']] }));
+  const k = s.D1.KSTG;
+  out.push(calc({ id:'Stage', title:'Growth stage for irrigation settings',
+    eq:'KSTG = \\begin{cases}1 & GDD \\le GDDFLO\\\\ 2 & GDDFLO < GDD \\le GDDRIPE\\\\ 3 & GDD > GDDRIPE\\end{cases}',
+    sub:`GDD = ${f(s.D0.GDDS,2)}\\ ${k === 1 ? '\\le' : '>'}\\ GDDFLO = ${f(s.D1.GDDFLO,0)}${k === 3 ? `,\\ > GDDRIPE = ${f(s.D1.GDDRIPE,0)}` : ''}`,
+    res:[['KSTG', f(k,0), '']], inputs:[['GDD', f(s.D0.GDDS,2), '°F·day', 'Weather · GDD'], ['GDDFLO / GDDRIPE', `${f(s.D1.GDDFLO,0)} / ${f(s.D1.GDDRIPE,0)}`, '°F·day', 'SIM file']],
+    feeds:[[5,'PAD, RAINAL, EAPP and limits are picked by stage']] }));
+  if (s.D1.ROOTZN_called) {
+    out.push(calc({ id:'ROOTZN · root depth', title:'Root depth', eq:'RZD = RZMIN + (RZMAX - RZMIN)\\,\\frac{GDD - GDDROOT}{GDDFLO - GDDROOT},\\quad RZMIN \\le RZD \\le RZMAX',
+      sub:`RZD = ${f(s.D1.RZMIN,1)} + (${f(s.D1.RZMAX,1)} - ${f(s.D1.RZMIN,1)})\\,\\frac{${f(s.D0.GDDS,2)} - ${f(s.D1.GDDROOT,0)}}{${f(s.D1.GDDFLO,0)} - ${f(s.D1.GDDROOT,0)}} = ${f(s.D1.RZD,3)}`,
+      res:[['RZD', f(s.D1.RZD,3), 'in']], inputs:[['GDD', f(s.D0.GDDS,2), '°F·day', 'Weather · GDD'], ['RZMIN / RZMAX', `${f(s.D1.RZMIN,1)} / ${f(s.D1.RZMAX,1)}`, 'in', 'SIM file (RZMAX scaled for soil class 8: × 1.0)'], ['GDDROOT / GDDFLO', `${f(s.D1.GDDROOT,0)} / ${f(s.D1.GDDFLO,0)}`, '°F·day', 'SIM file']],
+      feeds:[[1,'roots by layer'],[5,'depletion zone'],[8,'uptake']] }));
+  } else {
+    out.push(calc({ id:'ROOTZN', title:'Root depth', text:`ROOTZN is not called today: roots already reached RZMAX (${f(s.D1.RZMAX,1)} in) and AWATER is above zero, so yesterday's root values stand.`, res:[['RZD', f(s.D1.RZD,3), 'in']], feeds:[[5,'depletion zone'],[8,'uptake']] }));
+  }
+  const rows = LAYERS.filter(i => s.D1.PERRZD[i] > 0).map(i => [i, f(s.D1.PERRZD[i],3), f(s.D1.RDF[i],4), f(s.D1.PAWFT[i],3), tops[i] < s.D1.RZMGMT ? f(s.D1.AVMFT[i],3) : '–']);
+  out.push(calc({ id:'ROOTZN · water in reach', title:'Roots by layer and the water they can reach',
+    eq:'RDF(z_2,z_1) = 2.0633(z_2-z_1) - 1.622(z_2^2-z_1^2) + 0.5587(z_2^3-z_1^3),\\qquad PAW = \\sum_i PAWFT_i\\,PERRZD_i,\\qquad AWATER = \\sum_{z \\le RZMGMT} AVMFT_i\\,PERRZD_i',
+    table: layerTable(['Layer','In root zone PERRZD','Root share RDF','PAWFT in','AVMFT in (to RZMGMT)'], rows),
+    res:[['PAW', f(s.D1.PAW,3), 'in'], ['AWATER', f(s.D1.AWATER,3), 'in'], ['RZMGMT', f(s.D1.RZMGMT,0), 'in']],
+    feeds:[[5,'AWATER sets allowed depletion'],[8,'PAW and RDF set stress and uptake']],
+    note:'PERRZD is the fraction of the layer above today\'s root depth; z is depth as a fraction of RZD.' }));
+  return out.join('');
+}
+function step2(day){
+  const s = day.steps;
+  if (!has(day,'D2')) return skip(`<b>Skipped.</b> SNOWMELT runs only on a day with precipitation or snow on the ground (line 2018). Today had neither: precipitation ${f(s.D0.PRECIP,2)} in, snowpack ${f(s.D0.SNOH2O,2)} in.`);
+  return calc({ id:'SNOWMELT', title:'Rain or snow', eq:'T_{avg} \\le SFTMP \\Rightarrow \\text{snow};\\qquad SNOMLT = b_{mlt}\\,SNOCOV\\left(\\tfrac{T_{snow}+T_{max}}{2} - SMTMP\\right)',
+    sub:`T_{avg} = ${f(s.D0.TAVG,1)} > 32\\ \\Rightarrow\\ \\text{rain};\\qquad SNOH2O = ${f(s.D2.SNOH2O_in,2)}\\ \\Rightarrow\\ SNOMLT = ${f(s.D2.SNOMLT,2)}`,
+    res:[['RAIN out', f(s.D2.RAIN_out,3), 'in'], ['SNOH2O', f(s.D2.SNOH2O_out,2), 'in']],
+    inputs:[['PRECIP', f(s.D2.RAIN_in,3), 'in', 'Weather file'], ['TAVG', f(s.D0.TAVG,1), '°F', 'Start of day'], ['SFTMP', '32', '°F', 'BLOCK.DAT']],
+    feeds:[[3,'P for the runoff equation']], note:'In summer this step passes the rain straight through. The snowmelt base temperature SMTMP is never set (known issue), which only matters when there is snow.' });
+}
+function step3(day){
+  const s = day.steps, r = s.D3;
+  if (!r) return skip(`<b>Skipped.</b> No precipitation today, so EFPRECIP is not called. Effective precipitation and runoff are zero.`);
+  const out = [];
+  out.push(calc({ id:'EFPRECIP · 1', title:'Residue lowers the curve number (Onstad)', eq:'CNFACT = \\max\\left(\\frac{12.648 - 4.700/\\sqrt{0.001123\\,R}}{100},\\ 0\\right)\\quad \\text{(residue type 1)}',
+    sub:`CNFACT = \\frac{12.648 - 4.700/\\sqrt{0.001123 \\times ${f(r.RESIDUE,0)}}}{100} = ${f(r.CNFACT,5)}`, res:[['CNFACT', f(r.CNFACT,5), '']],
+    inputs:[['R (RESIDUE)', f(r.RESIDUE,0), 'lb/ac', 'Carried from last year\'s corn; no tillage since planting'], ['RESTYP (corn)', '1', '', 'BLOCK.DAT']], feeds:[[3,'stage curve number']] }));
+  const br = r.GDD <= r.GDDVEG ? 'f' : r.GDD <= r.GDDEFC ? 'v' : r.GDD <= r.GDDMAT ? 'p' : 'm';
+  const subs = { f:`GDD \\le GDDVEG:\\ CN = CN_{fallow}(1-CNFACT) = ${f(r.CNFALO,3)}`,
+    v:`CN = ${f(r.CNFALO,3)} + (${f(r.CNAVG,3)} - ${f(r.CNFALO,3)})\\frac{${f(r.GDD,1)} - ${f(r.GDDVEG,0)}}{${f(r.GDDEFC,0)} - ${f(r.GDDVEG,0)}} = ${f(r.CNUMB,3)}`,
+    p:`CN = ${f(r.CNAVG,3)} + (${f(r.CNPEAK,3)} - ${f(r.CNAVG,3)})\\frac{${f(r.GDD,1)} - ${f(r.GDDEFC,0)}}{${f(r.GDDMAT,0)} - ${f(r.GDDEFC,0)}} = ${f(r.CNUMB,3)}`,
+    m:`GDD > GDDMAT:\\ CN = CN_{fallow}(1-CNFACT)^2 = ${f(r.CNUMB,3)}` };
+  out.push(calc({ id:'EFPRECIP · 2', title:'Curve number for the growth stage',
+    eq:'CN_{fallow} = CNFALLOW(1-CNFACT)\\qquad CN_{avg} = CN(1-CNFACT)\\qquad CN_{peak} = (2CN - CNFALLOW)(1-CNFACT)',
+    sub: `CN_{fallow} = ${f(r.CNFALLOW,0)}(1-${f(r.CNFACT,4)}) = ${f(r.CNFALO,3)},\\ CN_{avg} = ${f(r.CN_table,0)}(1-${f(r.CNFACT,4)}) = ${f(r.CNAVG,3)},\\ CN_{peak} = ${f(r.CNPEAK,3)}`,
+    table: `<div class="sub">${tex(subs[br])}</div>`, res:[['CN', f(r.CNUMB,3), '']],
+    inputs:[['CN (corn, group ' + 'ABCD'[r.IHYGRP-1] + ')', f(r.CN_table,0), '', 'BLOCK.DAT'], ['CNFALLOW', f(r.CNFALLOW,0), '', 'BLOCK.DAT'], ['GDD', f(r.GDD,1), '°F·day', 'Step 1'], ['GDDVEG / GDDEFC / GDDMAT', `${f(r.GDDVEG,0)} / ${f(r.GDDEFC,0)} / ${f(r.GDDMAT,0)}`, '°F·day', 'SIM file']],
+    feeds:[[3,'moisture adjustment']], note: r.CNPEAK < r.CNAVG ? 'With these inputs the fallow curve number is higher than the crop\'s, so the "peak" value is below the crop value and the curve number falls as the crop moves from effective cover to maturity.' : '' }));
+  out.push(calc({ id:'EFPRECIP · 3', title:'Dry and wet curve numbers and their retention', eq:'CN_1 = \\frac{4.2\\,CN}{10 - 0.058\\,CN},\\quad CN_3 = \\frac{23\\,CN}{10 + 0.13\\,CN},\\quad S_{max} = 25.4\\left(\\frac{1000}{CN_1} - 10\\right),\\quad S_3 = 25.4\\left(\\frac{1000}{CN_3} - 10\\right)',
+    sub:`CN_1 = ${f(r.CN1,3)},\\quad CN_3 = ${f(r.CN3,3)},\\quad S_{max} = ${f(r.SMAX_mm,2)}\\ \\text{mm},\\quad S_3 = ${f(r.S3_mm,2)}\\ \\text{mm}`,
+    res:[['CN₁', f(r.CN1,3)], ['CN₃', f(r.CN3,3)], ['S_max', f(r.SMAX_mm,2), 'mm'], ['S₃', f(r.S3_mm,2), 'mm']], feeds:[[3,'retention today']] }));
+  out.push(calc({ id:'EFPRECIP · 4', title:'How wet the top 12 inches are', eq:'SW = \\sum_{top\\ 12\\,in} (\\theta_i - PWP_i)\\,25.4\\,d_i,\\quad FC = \\sum (FC_i - PWP_i)\\,25.4\\,d_i,\\quad SAT = \\sum (SATWC - PWP_i)\\,25.4\\,d_i',
+    sub:`SW = ${f(r.SW_mm,2)},\\quad FC = ${f(r.FC_mm,2)},\\quad SAT = ${f(r.SAT_mm,2)}\\ \\text{mm}`,
+    inputs:[['θ layer 1, 2', `${f(s.D0.THETA[1],4)}, ${f(s.D0.THETA[2],4)}`, 'in/in', yesterday(1)], ['PWP (effective) 1, 2', `${f(pwpE[1],4)}, ${f(pwpE[2],4)}`, 'in/in', 'Setup'], ['SATWC', f(r.SATWC,4), 'in/in', '1 − BULKD/2.65'], ['d (layers 1, 2)', '4, 8', 'in', 'BLOCK.DAT']],
+    res:[['SW', f(r.SW_mm,2), 'mm'], ['FC', f(r.FC_mm,2), 'mm'], ['SAT', f(r.SAT_mm,2), 'mm']], feeds:[[3,'retention today']] }));
+  out.push(calc({ id:'EFPRECIP · 5', title:'Retention for today\'s soil moisture (SWAT method)',
+    eq:'w_2 = \\frac{\\ln\\left(\\frac{FC}{1 - S_3/S_{max}} - FC\\right) - \\ln\\left(\\frac{SAT}{1 - 2.54/S_{max}} - SAT\\right)}{SAT - FC}\\qquad w_1 = \\ln\\left(\\frac{FC}{1 - S_3/S_{max}} - FC\\right) + w_2 FC\\qquad S = \\max\\left(2.54,\\ S_{max}\\left(1 - \\frac{SW}{SW + e^{w_1 - w_2 SW}}\\right)\\right)',
+    sub:`w_2 = ${f(r.W2,6)},\\quad w_1 = ${f(r.W1,4)}\\qquad S = ${f(r.S_in,4)}\\ \\text{in (after dividing by 25.4)}\\qquad CN_{today} = \\frac{25400}{S + 254} = ${f(r.CN_adj,2)}`,
+    res:[['S', f(r.S_in,4), 'in'], ['CN today', f(r.CN_adj,2), '']], feeds:[[3,'runoff']] }));
+  out.push(calc({ id:'EFPRECIP · 6', title:'Runoff and effective precipitation (SCS)', eq:'Q = \\frac{(P - 0.2S)^2}{P + 0.8S}\\ \\ (P > 0.2S),\\ \\text{else } 0;\\qquad P_{eff} = P - Q',
+    sub: r.RRUNOF > 0 ? `P = ${f(r.P,2)} > 0.2 \\times ${f(r.S_in,4)};\\quad \\frac{Q}{P} = ${f(r.RRUNOF,5)};\\quad Q = ${f(r.RUNOFF,4)},\\quad P_{eff} = ${f(r.P,2)} - ${f(r.RUNOFF,4)} = ${f(r.EPRECIP,4)}`
+                      : `P = ${f(r.P,2)} \\le 0.2 \\times ${f(r.S_in,4)}\\ \\Rightarrow\\ Q = 0,\\quad P_{eff} = ${f(r.EPRECIP,4)}`,
+    res:[['RUNOFF', f(r.RUNOFF,4), 'in'], ['EPRECIP', f(r.EPRECIP,4), 'in']], inputs:[['P', f(r.P,2), 'in', 'Step 2'], ['S', f(r.S_in,4), 'in', 'EFPRECIP · 5']],
+    feeds:[[4,'water to infiltrate'],[10,'runoff and effective precipitation totals']] }));
+  return out.join('');
+}
+function nthetTable(rec){
+  const rows = Object.keys(rec.room || {}).map(Number).sort((a,b)=>a-b).map(i => [i, f(depth[i],0), f(rec.room[i],4), f(rec.added[i],4)]);
+  return layerTable(['Layer','Thickness in','Room to field capacity in','Added in'], rows) + (rec.leftover !== undefined ? `<div class="sub">${tex(`\\text{left after layer 10} = ${f(rec.leftover,4)}\\ \\text{in} \\Rightarrow \\Delta\\theta = ${f(rec.spread_dtheta,5)}\\ \\text{on every layer}`)}</div>` : '');
+}
+function step4(day){
+  const s = day.steps;
+  if (!has(day,'D4')) return skip(`<b>Skipped.</b> No rain or melt today, so nothing infiltrates and the last wetting day stays at day ${f(s.D0.JDYWET,0)}.`);
+  const r = s.D4;
+  return calc({ id:'NTHET', title:'Fill layers to field capacity, top down', eq:'A_i = \\max((FC_i - \\theta_i)\\,d_i,\\ 0),\\qquad \\Delta\\theta_i = \\frac{\\min(A_i,\\ D_{inf})}{d_i},\\qquad D_{inf} \\leftarrow D_{inf} - \\min(A_i, D_{inf})',
+    sub:`D_{inf} = P_{eff} = ${f(r.DINF_in,4)}\\ \\text{in}`, table: nthetTable(r), res:[['JDYWET', f(day.jday,0), '(today)']],
+    inputs:[['D_inf', f(r.DINF_in,4), 'in', 'Step 3, EPRECIP'], ['θ, FC by layer', 'see soil column', 'in/in', yesterday(1)]],
+    feeds:[[5,'depletion after rain'],[9,'JDYWET restarts the drainage clock']], note:'There is no infiltration-rate limit: all effective rain enters the profile today.' });
+}
+function step5(day){
+  const s = day.steps, r = s.D5, out = [];
+  const zr = LAYERS.filter(i => tops[i] < r.AWATER*0 + s.D1.RZMGMT).map(i => [i, f(fc[i],4), f((s.D4 && s.D4.THETA_after) ? s.D4.THETA_after[i] : s.D0.THETA[i],4), f(s.D1.PERRZD[i],3), f(r.DEPL[i],4)]);
+  out.push(calc({ id:'DEPLT · trigger', title:'Depletion in the management zone and the allowed depletion',
+    eq:'AWDPLN = \\sum_{z \\le RZMGMT} (FC_i - \\theta_i)\\,d_i\\,PERRZD_i,\\qquad DPLA = AWATER \\times PAD_{KSTG}',
+    table: layerTable(['Layer (top ' + f(s.D1.RZMGMT,0) + ' in)','FC','θ now','PERRZD','Depletion in'], zr),
+    sub:`AWDPLN = ${f(r.AWDPLN,4)},\\qquad DPLA = ${f(r.AWATER,4)} \\times ${f(r.PAD,2)} = ${f(r.DPLA,4)}`,
+    res:[['AWDPLN', f(r.AWDPLN,4), 'in'], ['DPLA', f(r.DPLA,4), 'in']],
+    inputs:[['θ', 'after Step 4', 'in/in', has(day,'D4') ? 'Step 4' : yesterday(1)], ['AWATER', f(r.AWATER,4), 'in', 'Step 1'], ['PAD (stage ' + f(s.D1.KSTG,0) + ')', f(r.PAD,2), '', 'SIM file']],
+    feeds:[[5,'irrigation test']] }));
+  const gdd = s.D0.GDDS, inWin = gdd >= r.GSTART && gdd <= r.GSTOP;
+  if (!inWin) { out.push(skip(`<b>No irrigation check.</b> GDD ${f(gdd,1)} is outside the irrigation window ${f(r.GSTART,0)}–${f(r.GSTOP,0)} °F·day.`)); return out.join(''); }
+  if (r.RAINSTOR === undefined) { out.push(skip('IRRIGA was not reached today.')); return out.join(''); }
+  const t1 = r.AWDPLN >= r.DPLA, t2 = gdd < r.GSTOP, t3 = r.TODAY + 1 >= r.JNEXTI_in;
+  const pill = ok => `<span class="pill ${ok ? 'pass' : 'fail'}">${ok ? 'met' : 'not met'}</span>`;
+  out.push(calc({ id:'IRRIGA · tests', title:'Does the pivot run today?',
+    text:`All three must hold (IRRIGA, demand scheduling, lines 2800–2802).`,
+    table: layerTable(['Test','Today','Result'], [
+      ['Depletion has reached the allowed depletion: AWDPLN ≥ DPLA', `${f(r.AWDPLN,4)} vs ${f(r.DPLA,4)}`, pill(t1)],
+      ['Inside the window: GSTART ≤ GDD < GSTOP', `${f(r.GSTART,0)} ≤ ${f(gdd,1)} < ${f(r.GSTOP,0)}`, pill(t2)],
+      ['Pivot has come round: day + 1 ≥ JNEXTI', `${f(r.TODAY+1,0)} vs ${f(r.JNEXTI_in,2)}`, pill(t3)]]),
+    res:[['Irrigate', (t1 && t2 && t3) ? 'yes' : 'no', '']], feeds: (t1 && t2 && t3) ? [[5,'depth']] : [] }));
+  if (r.NETIRR_raw !== undefined) {
+    const clampTxt = r.GROIRR !== r.GROIRR_raw ? `\\Rightarrow\\ \\text{clamped to } [${f(r.APMIN,2)},\\ ${f(r.APMAX,2)}]: I_{gross} = ${f(r.GROIRR,3)}` : `\\text{(inside } [${f(r.APMIN,2)},\\ ${f(r.APMAX,2)}])`;
+    out.push(calc({ id:'IRRIGA · depth', title:'How much to apply',
+      eq:'I_{net} = DPLN - RAINAL\\cdot DPLA,\\qquad I_{gross} = \\frac{I_{net}}{EAPP},\\qquad APMIN \\le I_{gross} \\le APMAX,\\qquad I_{net} = I_{gross}\\cdot EAPP',
+      sub:`I_{net} = ${f(r.DPLN_stale,4)} - ${f(r.RAINAL,2)} \\times ${f(r.DPLA,4)} = ${f(r.NETIRR_raw,4)},\\quad I_{gross} = \\frac{${f(r.NETIRR_raw,4)}}{${f(r.EAPP,2)}} = ${f(r.GROIRR_raw,4)}\\ ${clampTxt}`,
+      table:`<div class="sub">${tex(`I_{net} = ${f(r.GROIRR,3)} \\times ${f(r.EAPP,2)} = ${f(r.NETIRR,4)},\\qquad D_{inf} = I_{net} = ${f(r.DINF_irr,4)}\\ \\text{(pivot, no tailwater)}`)}</div>`,
+      res:[['GROIRR', f(r.GROIRR,4), 'in'], ['NETIRR', f(r.NETIRR,4), 'in'], ['RAINSTOR', f(r.RAINSTOR,4), 'in']],
+      inputs:[['DPLN', f(r.DPLN_stale,4), 'in', 'Yesterday\'s Step 10, whole 108 in profile'], ['RAINAL', f(r.RAINAL,2), '', 'SIM file'], ['DPLA', f(r.DPLA,4), 'in', 'This step'], ['EAPP', f(r.EAPP,2), '', 'SIM file'], ['APMIN / APMAX / SMALLI', `${f(r.APMIN,2)} / ${f(r.APMAX,2)} / ${f(r.SMALLI,2)}`, 'in', 'SIM file']],
+      feeds:[[5,'infiltration of irrigation'],[10,'irrigation totals']],
+      flag:['Known issue: irrigation depth uses the wrong depletion', `The net depth is sized from DPLN = ${f(r.DPLN_stale,3)} in, yesterday's depletion of the whole 108 in profile, not today's management-zone depletion AWDPLN = ${f(r.AWDPLN,3)} in that triggered the event.${r.GROIRR !== r.GROIRR_raw ? ` Here the result was clamped to APMAX (${f(r.APMAX,2)} in), so the applied depth is the same either way.` : ''}`] }));
+    out.push(calc({ id:'IRRIGA · pivot clock', title:'When the pivot is free again', eq:'CYCLET = \\frac{I_{gross}}{SYSCAP \\cdot IPER},\\qquad JNEXTI = \\max(day, JNEXTI) + CYCLET',
+      sub:`CYCLET = \\frac{${f(r.GROIRR,3)}}{${f(r.SYSCAP,2)} \\times ${f(r.IPER,2)}} = ${f(r.CYCLET,3)}\\ \\text{days},\\quad JNEXTI = \\max(${f(r.TODAY,0)},\\ ${f(r.JNEXTI_in,2)}) + ${f(r.CYCLET,3)} = ${f(r.JNEXTI_out,2)}`,
+      res:[['JNEXTI', f(r.JNEXTI_out,2), 'day of year'], ['IRIGNO', f(r.IRIGNO,0), '']], feeds:[[5,'next days\' pivot test']],
+      note:`IRIGNO is the season irrigation count. It started at 1 before the first irrigation (known issue), so it reads one more than the number of events.` }));
+    const b = s.D5b;
+    if (b && b.room) out.push(calc({ id:'NTHET (irrigation)', title:'Irrigation infiltrates, top down', eq:'\\Delta\\theta_i = \\frac{\\min(A_i,\\ D_{inf})}{d_i}', sub:`D_{inf} = ${f(b.DINF_in,4)}\\ \\text{in}`, table: nthetTable(b), feeds:[[7,'wet surface for evaporation'],[8,'uptake'],[9,'redistribution']] }));
+  }
+  const wetNoWater = !has(day,'D4') && !(r.NETIRR > 0);
+  out.push(calc({ id:'DEPLT · line 2146', title:'Last wetting day', text:`After the irrigation block the code sets the last wetting day to today, whether or not any water went in.`,
+    res:[['JDYWET', f(r.JDYWET_set,0), '']], feeds:[[9,'drainage fraction']],
+    flag: wetNoWater ? ['Known issue: drainage clock resets on dry days', `No rain and no irrigation today, yet JDYWET was set to day ${f(r.JDYWET_set,0)}. Inside the irrigation window this happens every day, so the drainage fraction in Step 9 never grows past its first-day value.`] : null }));
+  return out.join('');
+}
+function step6(day){
+  const s = day.steps, w = day.W.W3, out = [];
+  if (w) {
+    const fr = w.f, br = fr <= 0.12 ? '0.15' : fr < 0.42 ? `0.15 + 0.85\\,\\frac{f - 0.12}{0.30}` : fr <= 0.78 ? 'K_{CU}' : fr <= 1 ? `1.0 - 0.7\\,\\frac{f - 0.78}{0.22}` : '0.15';
+    out.push(calc({ id:'CROPCO (corn, at setup)', title:'Crop coefficient for the day (Kranz; Watts 1982, Stegman 1988)',
+      eq:'f = \\frac{GDD}{GDDMAT},\\qquad K_c = \\begin{cases}0.15 & f \\le 0.12\\\\ 0.15 + 0.85\\frac{f-0.12}{0.30} & 0.12 < f < 0.42\\\\ K_{CU} & 0.42 \\le f \\le 0.78\\\\ 1.0 - 0.7\\frac{f-0.78}{0.22} & 0.78 < f \\le 1\\end{cases}',
+      sub:`f = \\frac{${f(w.GDD_used,2)}}{${f(w.GDDMAT,0)}} = ${f(fr,4)}\\ \\Rightarrow\\ K_c = ${br} = ${f(w.KC,4)}`,
+      res:[['KC', f(s.D6.KC,4), '']], inputs:[['GDD used', f(w.GDD_used,2), '°F·day', 'Cumulative GDD of the day before (see issue)'], ['GDDMAT', f(w.GDDMAT,0), '°F·day', 'SIM file'], ['KCU', f(s.D6.KCU,2), '', 'BLOCK.DAT']],
+      feeds:[[7,'canopy share of ETr'],[8,'potential transpiration']],
+      flag: Math.abs(w.GDD_used - w.GDDS_today) > 1e-3 ? ['Found while building this example: Kc is one day behind', `The setup loop calls CROPCO before it sets GDD for the day (READWEAT lines 3693–3696), so today's Kc is computed from ${f(w.GDD_used,2)} °F·day, yesterday's total, not today's ${f(w.GDDS_today,2)}.`] : null }));
+  } else out.push(calc({ id:'CROPCO', title:'Crop coefficient', res:[['KC', f(s.D6.KC,4), '']] }));
+  out.push(calc({ id:'Residue', title:'Residue and tillage', text:`No harvest or tillage this week, so surface residue stays at ${f(s.D6.RESIDUE,0)} lb/ac (CropSim has no residue decay).`, res:[['RESIDUE', f(s.D6.RESIDUE,0), 'lb/ac']], feeds:[[3,'curve number'],[7,'evaporation shading']] }));
+  out.push(calc({ id:'SOILTEMP', title:'Soil temperature', text:'Computed every day and carried to next year, but nothing in the water balance reads it.',
+    table: layerTable(['Layer','1','2','3','4','5','10'], [['°F', f(s.D6.SOILT[1],1), f(s.D6.SOILT[2],1), f(s.D6.SOILT[3],1), f(s.D6.SOILT[4],1), f(s.D6.SOILT[5],1), f(s.D6.SOILT[10],1)]]) }));
+  return out.join('');
+}
+function step7(day){
+  const s = day.steps, r = s.D7, out = [];
+  if (!r || r.EP_canopy === undefined) return skip('No evaporation calculation today (reference ET was zero).');
+  out.push(calc({ id:'DEPLT · line 2197', title:'Potential evaporation: the part of ETr the canopy leaves to the soil', eq:'EP = ET_r\\cdot\\min(KCU + KCL - K_c,\\ 1)',
+    sub:`EP = ${f(s.D0.ETR,4)} \\times \\min(${f(s.D6.KCU,2)} + ${f(s.D6.KCL,2)} - ${f(s.D6.KC,4)},\\ 1) = ${f(r.EP_canopy,4)}`,
+    res:[['EP', f(r.EP_canopy,4), 'in/day'], ['EPMAX', f(r.EPMAX,4), 'in/day']], inputs:[['ETR', f(s.D0.ETR,4), 'in/day', 'Step 1'], ['KC', f(s.D6.KC,4), '', 'Step 6'], ['KCL / KCU', `${f(s.D6.KCL,2)} / ${f(s.D6.KCU,2)}`, '', 'BLOCK.DAT']],
+    feeds:[[7,'residue reduction'],[8,'EPMAX in the transpiration boost']] }));
+  if (r.REDF !== undefined) out.push(calc({ id:'EVAP · residue', title:'Residue shades the soil', eq:'RESDEP = 1.123\\times10^{-7}\\,\\frac{R}{SPGRAV},\\qquad REDF = \\min(\\max(-0.99 - 0.236\\ln RESDEP,\\ 0),\\ 1),\\qquad EP \\leftarrow EP\\cdot REDF',
+    sub:`RESDEP = 1.123\\times10^{-7}\\times\\frac{${f(s.D6.RESIDUE,0)}}{${f(r.SPGRAV,2)}} = ${r.RESDEP.toExponential(4).replace('e', '\\times10^{')}}},\\quad REDF = ${f(r.REDF,4)},\\quad EP = ${f(r.EP,4)}`,
+    res:[['REDF', f(r.REDF,4), ''], ['EP', f(r.EP,4), 'in/day']], inputs:[['R', f(s.D6.RESIDUE,0), 'lb/ac', 'Step 6'], ['SPGRAV (corn)', f(r.SPGRAV,2), '', 'BLOCK.DAT']], feeds:[[7,'stage 1 or 2 drying']] }));
+  const alpha = `\\alpha = 0.303\\,(FC_1 - AIRDRY_1)\\,d_1 + 0.0547 = 0.303\\times(${f(fc[1],3)} - ${f(r.AIRDRY1,3)})\\times4 + 0.0547 = ${f(r.ALPHA,4)}`;
+  let stage, sub;
+  if (r.AVAIL1 === undefined) { stage = 'Stage 2 (layer 1 air dry)'; sub = `E_2 = \\min(\\alpha(\\sqrt{j - t_0} - \\sqrt{j - 1 - t_0}),\\ EP,\\ (\\theta_2 - AIRDRY_2)d_2) = ${f(r.E2,4)},\\quad t_0 = ${f(r.TIME_in,3)}`; }
+  else if (r.AVAIL1 >= r.EP) { stage = 'Stage 1 (surface wet)'; sub = `A_1 = (\\theta_1 - AIRDRY_1)\\,d_1 = (${f(r.THETA1_in,4)} - ${f(r.AIRDRY1,3)})\\times4 = ${f(r.AVAIL1,4)} \\ge EP\\ \\Rightarrow\\ E_1 = EP = ${f(r.E1,4)},\\ E_2 = 0`; }
+  else { stage = 'Transition from stage 1 to stage 2'; sub = `A_1 = ${f(r.AVAIL1,4)} < EP = ${f(r.EP,4)}\\ \\Rightarrow\\ E_1 = A_1 = ${f(r.E1,4)},\\quad E_2 = \\min(\\alpha\\sqrt{1 - A_1/EP},\\ (\\theta_2 - AIRDRY_2)d_2,\\ EP - E_1) = ${f(r.E2,4)}`; }
+  out.push(calc({ id:'EVAP · Ritchie two-stage', title:'Soil evaporation: ' + stage, eq: alpha, sub,
+    table:`<div class="sub">${tex(`\\theta_1 = ${f(r.THETA1_in,4)} - \\frac{${f(r.E1,4)}}{4} = ${f(r.THETA1,4)},\\qquad \\theta_2 = ${f(r.THETA2_in,4)} - \\frac{${f(r.E2,4)}}{8} = ${f(r.THETA2,4)}`)}</div>`,
+    res:[['E₁', f(r.E1,4), 'in'], ['E₂', f(r.E2,4), 'in'], ['E', f(r.E,4), 'in']],
+    inputs:[['θ₁, θ₂', `${f(r.THETA1_in,4)}, ${f(r.THETA2_in,4)}`, 'in/in', has(day,'D5b') && day.steps.D5b.room ? 'Step 5 (after irrigation)' : has(day,'D4') ? 'Step 4' : yesterday(1)], ['AIRDRY₁, ₂', `${f(r.AIRDRY1,3)}, ${f(r.AIRDRY2,3)}`, 'in/in', 'Soil file'], ['EP', f(r.EP,4), 'in/day', 'This step']],
+    feeds:[[8,'E enters the transpiration boost'],[10,'evaporation total']] }));
+  return out.join('');
+}
+function step8(day){
+  const s = day.steps, r = s.D8, out = [];
+  if (!r) return skip('No transpiration today (Kc at its lower limit).');
+  out.push(calc({ id:'DEPLT · lines 2216–2217', title:'Potential transpiration', eq:'TP = ET_r\\,(K_c - KCL)\\left(1 + TUP\\,\\frac{EP_{max} - E}{EP_{max}}\\right),\\qquad TUP = \\frac{KCL}{KCU - KCL}',
+    sub:`TP = ${f(s.D0.ETR,4)}\\times(${f(s.D6.KC,4)} - ${f(s.D6.KCL,2)})\\times\\left(1 + ${f(r.TUP,3)}\\times\\frac{${f(s.D7.EPMAX,4)} - ${f(s.D7.E,4)}}{${f(s.D7.EPMAX,4)}}\\right) = ${f(r.TP,4)}`,
+    res:[['ET_r(K_c − KCL)', f(r.TP_base,4), 'in'], ['TP', f(r.TP,4), 'in']], inputs:[['ETR', f(s.D0.ETR,4), 'in/day', 'Step 1'], ['KC', f(s.D6.KC,4), '', 'Step 6'], ['EPMAX, E', `${f(s.D7.EPMAX,4)}, ${f(s.D7.E,4)}`, 'in', 'Step 7']],
+    feeds:[[8,'stress'],[10,'yield accumulators']], note:'The bracket lets the crop take up the part of the soil-evaporation demand the dry surface could not supply.' }));
+  out.push(calc({ id:'DEPLT · lines 2224–2251', title:'Water stress', eq:'DPLN = \\sum_i \\max((FC_i - \\theta_i)\\,d_i\\,PERRZD_i,\\ 0),\\qquad AV = 100\\left(1 - \\frac{DPLN}{PAW}\\right),\\qquad SR = \\min\\left(\\frac{AV}{TBREAK},\\ 1\\right),\\qquad T = TP\\cdot SR',
+    sub:`DPLN = ${f(r.DPLN_rz,4)},\\quad AV = 100\\left(1 - \\frac{${f(r.DPLN_rz,4)}}{${f(r.PAW,4)}}\\right) = ${f(r.AV,2)}\\%,\\quad SR = ${r.AV > r.TBREAK ? `1\\ (AV > ${f(r.TBREAK,0)})` : `\\frac{${f(r.AV,2)}}{${f(r.TBREAK,0)}} = ${f(r.SR,4)}`},\\quad T = ${f(r.T,4)}`,
+    res:[['AV', f(r.AV,2), '%'], ['SR', f(r.SR,4), ''], ['T', f(r.T,4), 'in']], inputs:[['PAW', f(r.PAW,4), 'in', 'Step 1'], ['TBREAK', f(r.TBREAK,0), '%', 'SIM file'], ['θ', 'after Step 7', 'in/in', 'Step 7']],
+    feeds:[[8,'uptake by layer'],[10,'transpiration total']] }));
+  const passes = {}; (r.pass || []).forEach((p, k) => { const L = p[0], ps = p[1]; (passes[ps] = passes[ps] || {})[L] = { u: r.uptake[k][1], a: r.layer_avail[k][1] }; });
+  const p1 = passes[1] || {};
+  const rows = Object.keys(p1).map(Number).filter(i => s.D1.PERRZD[i] > 0).map(i => [i, f(s.D1.RDF[i],4), f(r.PERDEP[i],4), f(s.D1.RDF[i]*(1-r.PERDEP[i]),4), f(p1[i].a,4), f(p1[i].u,4)]);
+  out.push(calc({ id:'DEPLT · lines 2279–2298', title:'Where the roots take the water from', eq:'PERDEP_i = \\frac{\\text{depletion}_i}{PAWFT_i\\,PERRZD_i},\\qquad U_i = T\\,\\frac{RDF_i\\,(1 - PERDEP_i)}{\\sum_k RDF_k\\,(1 - PERDEP_k)},\\qquad U_i \\le (\\theta_i - PWP_i^{eff})\\,d_i\\,PERRZD_i',
+    sub:`\\sum_k RDF_k(1 - PERDEP_k) = ${f(r.TWEIGH,4)}`,
+    table: layerTable(['Layer','Root share RDF','Relative depletion PERDEP','Weight','Available in','Uptake in'], rows),
+    res:[['Water removed', f(r.TUSE,4), 'in'], ['T reported', f(r.T_final,4), 'in'], ['Passes', f(r.ITRIES,0), '']],
+    feeds:[[9,'layer water contents'],[10,'transpiration total']],
+    note: r.ITRIES > 1 ? `A layer could not supply its share, so the shortfall was spread over the others in ${f(r.ITRIES,0)} passes (the table shows pass 1).` : 'Every layer could supply its share on the first pass.',
+    flag: r.WAVAIL < r.T ? ['Known issue: transpiration not reduced when the root zone runs dry', `Only ${f(r.WAVAIL,4)} in was available against T = ${f(r.T,4)} in; the layers were emptied but T was not reduced.`] : null }));
+  return out.join('');
+}
+function step9(day){
+  const s = day.steps, r = s.D9, out = [];
+  const before = s.D8 && s.D8.THETA_after ? s.D8.THETA_after : s.D0.THETA;
+  const rows = LAYERS.map(i => [i, f(fc[i],4), f(before[i],4), f(r.THETA_redist[i],4), f(r.THETA_end[i],4)]);
+  out.push(calc({ id:'DEPLT · lines 2377–2403', title:'Redistribution: water above field capacity moves down',
+    text:'Working down the profile, any layer above field capacity is set to field capacity and the excess fills drier layers below. What is left after layer 10 is EXTRA.',
+    table: layerTable(['Layer','FC','θ before','θ after redistribution','θ end of day'], rows),
+    res:[['EXTRA', f(r.EXTRA,4), 'in'], ['DISTD', f(r.DISTD,1), 'in at field capacity']], feeds:[[9,'drainage']] }));
+  if (r.EXTRA > 0) {
+    out.push(calc({ id:'DEPLT · lines 2418–2434', title:'Deep percolation below 108 inches', eq:'f_d = \\min\\left(\\left(\\frac{j - JDYWET + 1}{DRNDAY}\\right)^{DRNCOE},\\ 1\\right),\\qquad D = f_d\\cdot EXTRA,\\qquad \\Delta\\theta = \\frac{(1 - f_d)\\,EXTRA}{DISTD}',
+      sub:`f_d = \\left(\\frac{${day.jday} - ${f(r.JDYWET,0)} + 1}{${f(r.DRAIND,1)}}\\right)^{${f(r.DCOEFF,2)}} = ${f(r.DFRACT,4)},\\quad D = ${f(r.DFRACT,4)}\\times${f(r.EXTRA,4)} = ${f(r.DRAIN,4)},\\quad \\Delta\\theta = ${f(r.DIST,5)}`,
+      res:[['DRAIN', f(r.DRAIN,4), 'in']],
+      inputs:[['JDYWET', f(r.JDYWET,0), 'day', 'Step 4 or 5'], ['DRNDAY / DRNCOE', `${f(r.DRAIND,1)} / ${f(r.DCOEFF,2)}`, '', 'Hard-coded for soil 822']],
+      feeds:[[10,'deep percolation (recharge)']],
+      flag: (r.JDYWET === day.jday && !has(day,'D4') && !(s.D5 && s.D5.NETIRR > 0)) ? ['Known issue: drainage clock reset', `JDYWET is today although no water went in, so f_d takes its first-day value (1/${f(r.DRAIND,0)})^${f(r.DCOEFF,1)} instead of growing with the days since the last real wetting.`] : null }));
+  } else out.push(skip(`<b>No drainage today.</b> After redistribution no layer is above field capacity (EXTRA = 0), so nothing leaves the bottom of the profile.`));
+  return out.join('');
+}
+function step10(day){
+  const s = day.steps, r = s.D10;
+  const S0 = LAYERS.reduce((a,i) => a + s.D0.THETA[i]*depth[i], 0), S1 = LAYERS.reduce((a,i) => a + s.D9.THETA_end[i]*depth[i], 0);
+  const Pe = g(day,'D3','EPRECIP') ?? 0, I = (s.D5 && s.D5.DINF_irr && s.D5.NETIRR > 0) ? s.D5.DINF_irr : 0, E = g(day,'D7','E') ?? 0, Tt = g(day,'D8','T_final') ?? 0, Dr = s.D9.DRAIN;
+  const resid = (S1 - S0) - (Pe + I - E - Tt - Dr);
+  const out = [];
+  out.push(calc({ id:'Balance check', title:'Does the day close?', eq:'\\Delta S = P_{eff} + I_{inf} - E - T - D',
+    sub:`${f(S1-S0,4)} \\ \\text{vs}\\ ${f(Pe,4)} + ${f(I,4)} - ${f(E,4)} - ${f(Tt,4)} - ${f(Dr,4)} = ${f(Pe+I-E-Tt-Dr,4)}`,
+    res:[['Storage start', f(S0,4), 'in'], ['Storage end', f(S1,4), 'in'], ['Difference', f(resid,5), 'in']],
+    note:'Storage is Σ θᵢ dᵢ over the 108 in profile at the start and end of the day. This is the one place on the page where values are combined outside the program, to check that the traced fluxes account for the change in storage.' }));
+  out.push(calc({ id:'Totals', title:'Season totals so far (what the outputs are built from)',
+    table: layerTable(['Total to date','Inches'], [['Precipitation PRECIPS', f(r.PRECIPS,3)], ['Effective precipitation EPRECIPS', f(r.EPRECIPS,3)], ['Net irrigation SNIRR', f(r.SNIRR,3)], ['Gross irrigation SGRIRR', f(r.SGRIRR,3)], ['Evaporation ES', f(r.ES,3)], ['Transpiration TS', f(r.TS,3)], ['ET ETS', f(r.ETS,3)], ['Deep percolation DRAINS', f(r.DRAINS,3)]]),
+    res:[['Whole-profile depletion DPLN', f(r.DPLN_profile,4), 'in'], ['Management-zone depletion', f(r.AWDPLN_end,4), 'in']],
+    feeds:[[5,'tomorrow: DPLN sizes the next irrigation']],
+    flag:['Known issue: monthly infiltrated irrigation is always zero', 'The monthly INFMON total adds DINF after NTHET has already set it to zero (line 2560), so it is 0.0 in every month of this run, as the original program\'s own monthly summary shows. The wrapper passes INFMON through as an output.'] }));
+  return out.join('');
+}
+const BUILD = [null, step1, step2, step3, step4, step5, step6, step7, step8, step9, step10];
+
+/* ---------- soil column figure ---------- */
+function thetaAfter(day, n){
+  const s = day.steps; let th = Object.assign({}, s.D0.THETA);
+  if (n >= 4 && s.D4) th = Object.assign({}, s.D4.THETA_after);
+  if (n >= 5 && s.D5b && s.D5b.THETA_after) th = Object.assign({}, s.D5b.THETA_after);
+  if (n >= 7 && s.D7 && s.D7.THETA1 !== undefined) { th[1] = s.D7.THETA1; th[2] = s.D7.THETA2; }
+  if (n >= 8 && s.D8 && s.D8.THETA_after) th = Object.assign({}, s.D8.THETA_after);
+  if (n >= 9) th = Object.assign({}, s.D9.THETA_end);
+  return th;
+}
+function drawColumn(day, n){
+  const th1 = thetaAfter(day, n), th0 = thetaAfter(day, n - 1), s = day.steps;
+  const W = 280, top = 34, sc = 3.3, x0 = 56, bw = 170;
+  let h = `<svg viewBox="0 0 ${W} ${top + 108*sc + 30}" role="img" aria-label="Water content by layer after step ${n}">`;
+  h += `<text x="${x0}" y="14" font-size="12" font-weight="600">Soil water after step ${n}</text><text x="${x0}" y="28" font-size="10.5" fill="var(--muted)">bar: wilting point (left) to field capacity (right)</text>`;
+  LAYERS.forEach(i => {
+    const y = top + tops[i]*sc, hh = depth[i]*sc, lo = pwpE[i], hi = fc[i];
+    const fr = v => Math.max(0, Math.min(1.25, (v - lo) / (hi - lo)));
+    h += `<rect x="${x0}" y="${y}" width="${bw}" height="${hh}" fill="${i % 2 ? 'var(--soil-1)' : 'var(--soil-2)'}"/>`;
+    h += `<rect x="${x0}" y="${y + hh*0.2}" width="${bw*fr(th1[i])}" height="${hh*0.6}" fill="var(--water)" opacity=".8"/>`;
+    if (Math.abs(th1[i] - th0[i]) > 5e-5) h += `<line x1="${x0 + bw*fr(th0[i])}" x2="${x0 + bw*fr(th0[i])}" y1="${y+1}" y2="${y+hh-1}" stroke="var(--fg)" stroke-width="1.5" stroke-dasharray="2 2"/>`;
+    h += `<text x="${x0 + bw + 6}" y="${y + hh/2 + 4}" font-size="10.5" class="num">${f(th1[i],3)}</text>`;
+  });
+  h += `<line x1="${x0+bw}" x2="${x0+bw}" y1="${top}" y2="${top+108*sc}" stroke="var(--fg)" stroke-width="1" opacity=".5"/>`;
+  [0, 12, 36, 60, 108].forEach(z => { const y = top + z*sc; h += `<line x1="${x0-6}" x2="${x0}" y1="${y}" y2="${y}" stroke="var(--muted)"/><text x="${x0-9}" y="${y+4}" font-size="10.5" text-anchor="end" fill="var(--muted)">${z}</text>`; });
+  const rz = s.D1.RZD, rm = s.D1.RZMGMT;
+  h += `<line x1="${x0-4}" x2="${x0+bw+4}" y1="${top+rz*sc}" y2="${top+rz*sc}" stroke="var(--crop)" stroke-width="2" stroke-dasharray="6 4"/><text x="4" y="${top+rz*sc+4}" font-size="10" fill="var(--crop)">roots</text>`;
+  if (Math.abs(rm - rz) > 1) h += `<line x1="${x0-4}" x2="${x0+bw+4}" y1="${top+rm*sc}" y2="${top+rm*sc}" stroke="var(--heat)" stroke-width="1.5" stroke-dasharray="3 3"/><text x="4" y="${top+rm*sc+4}" font-size="10" fill="var(--heat)">mgmt</text>`;
+  else h += `<text x="4" y="${top+rm*sc+16}" font-size="10" fill="var(--heat)">mgmt ${f(rm,0)}</text>`;
+  h += `<text x="${x0}" y="${top + 108*sc + 18}" font-size="10.5" fill="var(--muted)">depth, in · dashed tick = before this step</text></svg>`;
+  return h + `<p class="colcap">Values are volumetric water content (in/in) traced after step ${n}. Bars past the right edge are above field capacity and waiting to drain.</p>`;
+}
+
+/* ---------- stepper ---------- */
+let cd = 0, cs = 1;
+const evDots = x => `<span class="ev">${x.P > 0 ? '<b style="background:var(--water)"></b>' : ''}${x.I > 0 ? '<b style="background:var(--accent)"></b>' : ''}${x.Dr > 0 ? '<b style="background:var(--runoff)"></b>' : ''}</span>`;
+$('#days').insertAdjacentHTML('beforeend', wk.map((x,i) => `<button class="dbtn" type="button" data-d="${i}" aria-pressed="false">${dlabel(x.d.date,true)} ${evDots(x)}</button>`).join('') +
+  `<span class="nav"><button type="button" id="prev">← Previous</button><button type="button" id="next">Next →</button></span>`);
+$('#stepsrow').insertAdjacentHTML('beforeend', [1,2,3,4,5,6,7,8,9,10].map(n => `<button class="sbtn" type="button" data-s="${n}" aria-pressed="false" title="${STEPNAMES[n]}">${n}</button>`).join('') + `<span class="hint" id="stepname"></span>`);
+function render(scroll){
+  const day = DAYS[cd];
+  document.querySelectorAll('.dbtn').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.d === cd)));
+  document.querySelectorAll('.sbtn').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.s === cs)));
+  document.querySelectorAll('#daytable tr[data-day]').forEach(tr => tr.classList.toggle('sel', +tr.dataset.day === cd));
+  $('#stepname').textContent = STEPNAMES[cs];
+  const head = `<div class="stephead"><span class="eyebrow">${dlabel(day.date,true)}, ${D.year} · day ${day.jday} · step ${cs} of 10</span><h3 style="font-size:1.35rem">${cs}. ${STEPNAMES[cs]}</h3>
+    <div class="meta"><span class="tag">${ROUTINE[cs]}</span><span>Technical reference: <i>${SECTION[cs]}</i></span><span>Lines ${LINES[cs]}</span></div></div>`;
+  $('#stepbody').innerHTML = head + BUILD[cs](day, cd);
+  $('#colfig').innerHTML = drawColumn(day, cs);
+  if (scroll) { const t = $('#walk').getBoundingClientRect().top; if (t < -40 || t > innerHeight * 0.6) $('#walk').scrollIntoView({behavior:'smooth', block:'start'}); }
+}
+function go(dd, ss, scroll){ cd = Math.max(0, Math.min(6, dd)); cs = ss; render(scroll); }
+function nextStep(){ if (cs < 10) go(cd, cs + 1); else if (cd < 6) go(cd + 1, 1); }
+function prevStep(){ if (cs > 1) go(cd, cs - 1); else if (cd > 0) go(cd - 1, 10); }
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-d],[data-s],[data-goto],#prev,#next,tr[data-day]');
+  if (!b) return;
+  if (b.id === 'prev') prevStep(); else if (b.id === 'next') nextStep();
+  else if (b.dataset.goto) go(cd, +b.dataset.goto);
+  else if (b.dataset.s) go(cd, +b.dataset.s);
+  else if (b.dataset.d) go(+b.dataset.d, cs);
+  else if (b.dataset.day) go(+b.dataset.day, 1, true);
+});
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea,select')) return;
+  if (e.key === 'Enter' && e.target.matches('tr[data-day]')) { go(+e.target.dataset.day, 1, true); return; }
+  if (e.key === 'ArrowRight') { nextStep(); e.preventDefault(); }
+  else if (e.key === 'ArrowLeft') { prevStep(); e.preventDefault(); }
+  else if (e.key === ']') go(cd + 1, cs); else if (e.key === '[') go(cd - 1, cs);
+});
+
+/* ---------- issues ---------- */
+(function issues(){
+  const list = [];
+  const resetDays = DAYS.filter(d => d.steps.D5 && d.steps.D5.JDYWET_set === d.jday && !d.steps.D4 && !(d.steps.D5.NETIRR > 0));
+  const drainOnReset = resetDays.filter(d => d.steps.D9.EXTRA > 0);
+  list.push({ t:'Drainage clock resets every day in the irrigation window', w:`Steps 5 and 9 · ${resetDays.length} of 7 days (${resetDays.map(d => dlabel(d.date)).join(', ') || 'none'})`,
+    p:`Line 2146 sets the last wetting day after the irrigation block even when nothing was applied. ${drainOnReset.length ? `On ${drainOnReset.map(d => dlabel(d.date)).join(', ')} there was water above field capacity, so the drained fraction used the first-day value instead of a growing one.` : 'This week no excess water was waiting to drain on those days, so deep percolation was not changed, but the clock was wrong.'} Seen in the 11 Nov review experiments.` });
+  const irr = DAYS.filter(d => d.steps.D5 && d.steps.D5.NETIRR > 0);
+  list.push({ t:'Irrigation depth sized from yesterday\'s whole-profile depletion', w: irr.length ? `Step 5 · ${irr.map(d => `${dlabel(d.date)}: DPLN ${f(d.steps.D5.DPLN_stale,2)} in vs AWDPLN ${f(d.steps.D5.AWDPLN,2)} in`).join('; ')}` : 'Step 5 · no irrigation this week',
+    p: irr.length ? `The trigger uses the management-zone depletion; the depth uses DPLN from the end of yesterday over all 108 in. ${irr.every(d => d.steps.D5.GROIRR !== d.steps.D5.GROIRR_raw) ? 'This week every event was clamped to APMAX, so the applied depth did not change.' : 'Where the depth was not clamped it differs from what the triggering depletion implies.'}` : 'Would affect the depth of any irrigation.' , none: !irr.length });
+  const lag = DAYS.filter(d => d.W.W3 && Math.abs(d.W.W3.GDD_used - d.W.W3.GDDS_today) > 1e-3);
+  list.push({ t:'Kc is computed from the previous day\'s GDD (new)', w:`Step 6 · all ${lag.length} days`, p:'In READWEAT the setup loop calls CROPCO before setting GDD for the day, so every daily Kc uses yesterday\'s degree days. Mid-season corn sits on its KCU plateau, so the effect here is zero or tiny; it is largest during canopy growth and senescence.' });
+  list.push({ t:'Monthly infiltrated irrigation INFMON is always zero (new)', w:'Step 10 · every month', p:'INFMON adds DINF after NTHET has reset it to zero. The original\'s monthly summary prints 0.0 in every month of this run despite irrigation. Annual and other monthly totals are unaffected.' });
+  list.push({ t:'Irrigation count starts at one', w:'Step 5 · the season count IRIGNO', p:'Line 2123 sets IRIGNO to 1 before any irrigation for every irrigation type, so the count reported in outputs is one more than the number of events (review finding).' });
+  const dry = DAYS.filter(d => d.steps.D8 && d.steps.D8.WAVAIL < d.steps.D8.T);
+  list.push({ t:'Transpiration not reduced when the root zone runs dry', w: dry.length ? 'Step 8 · ' + dry.map(d => dlabel(d.date)).join(', ') : 'Step 8 · not triggered this week', p:'Only matters when the roots hold less water than the day\'s transpiration. The irrigated root zone never got that dry this week.', none: !dry.length });
+  list.push({ t:'Not in play this week', w:'Steps 2 and 3', p:'Snowmelt base temperature never set (no snow), residue factor applied twice after maturity (crop not mature), rotation scheduling issues (demand scheduling used), state shared across soils (one soil, one parcel run).', none:true });
+  $('#issuelist').innerHTML = list.map(x => `<article class="issue${x.none ? ' none' : ''}"><h3>${esc(x.t)}</h3><p class="where">${esc(x.w)}</p><p>${esc(x.p)}</p></article>`).join('');
+})();
+
+/* ---------- provenance ---------- */
+$('#prov').innerHTML = (D.provenance || []).map(x => `<li>${x}</li>`).join('') +
+  `<li>Cross-check: ${D.check_summary.ok} of ${D.check_summary.n} traced values for the week (ETr, season E, T, ET, irrigation, precipitation and drainage totals, Kc, depletion, root depth, PAW, AWATER) match the original program's own daily printout to its printed precision.</li>`;
+go(0, 1);
+})();
+</script>

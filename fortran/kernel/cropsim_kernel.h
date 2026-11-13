@@ -32,6 +32,7 @@ extern "C" {
 #define CSK_FIX_NONE 0
 #define CSK_FIX_KC_GDD_LAG                    1  /* Crop coefficient uses the day's GDD, not the previous day's (original READWEAT 3693-3697). */
 #define CSK_FIX_SNOWMELT_BASE                 2  /* Snow melts above params%smtmp (default 32 F) instead of an unset SMTMP of 0 F (original SNOWMELT 3994-3999). */
+#define CSK_FIX_IRRIGATION_COUNT              4  /* Irrigation count and first irrigation date count real irrigations (original DEPLT 2123, IRRIGA 2869-2925). */
 
 /* BLOCK.DAT and TILLAGE.DAT. */
 typedef struct {

@@ -16,6 +16,7 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | --- | --- | --- | --- |
 | 0 | 1 | `KC_GDD_LAG` | Crop coefficients (all crops), so ET |
 | 1 | 2 | `SNOWMELT_BASE` | Snow melt timing, so winter runoff and infiltration |
+| 2 | 4 | `IRRIGATION_COUNT` | Reported irrigation count (IRIGNO) and first irrigation day (JFIRST) only |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -43,3 +44,22 @@ never read or set, so it is 0 F. Snow melts on any day with a high above
 **Test.** `test_snowmelt_base`: on the range parcel, snow cover shrinks
 on dry days with highs at or below 32 F with the fix off, and never with
 it on.
+
+## IRRIGATION_COUNT: irrigation count and first date wrong
+
+**Original** (DEPLT 2123; IRRIGA 2869-2925). `IRIGNO` doubles as the index of
+the next known irrigation date, so it is set to 1 before the first
+irrigation in every irrigated run. Demand-scheduled runs then report one
+irrigation too many, and since the count never passes through 1 after an
+irrigation, the first irrigation date `JFIRST` is never recorded. The
+forecast methods (IRRSCH 4 and 5) also count every day that passes the
+date and GDD checks, irrigated or not.
+
+**Fix.** Known irrigation dates use their own index; `IRIGNO` counts only
+days with water applied, and `JFIRST` is the first of them. Water applied
+is unchanged.
+
+**Test.** `test_irrigation_count` for demand, forecast and known-date
+runs: off, the count is the number of irrigated days plus one (much more
+for the forecast method) and `JFIRST` is 0; on, both match the daily
+irrigation record.

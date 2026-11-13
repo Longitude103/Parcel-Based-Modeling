@@ -44,6 +44,9 @@ module csk_types
   ! Snow melts above params%smtmp (default 32 F) instead of an
   ! unset SMTMP of 0 F (original SNOWMELT 3994-3999).
   integer, parameter, public :: FIX_SNOWMELT_BASE = 2
+  ! Irrigation count and first irrigation date count real irrigations
+  ! (original DEPLT 2123, IRRIGA 2869-2925).
+  integer, parameter, public :: FIX_IRRIGATION_COUNT = 4
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).

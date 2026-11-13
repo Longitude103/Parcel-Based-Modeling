@@ -112,7 +112,7 @@ contains
         w%dinf = 0.0
         ! The forecast methods (4, 5) carry on from here in the original,
         ! so a day with no irrigation still counts in IRIGNO.
-        if (demand) return
+        if (demand .or. fix_on(w, FIX_IRRIGATION_COUNT)) return
       else
         if (w%groirr < w%apmin(istage)) w%groirr = w%apmin(istage)
         if (w%groirr > w%apmax(istage)) w%groirr = w%apmax(istage)
@@ -159,6 +159,7 @@ contains
     w%eveg = 0.
     w%icut = 1
     w%irigno = 0
+    w%ievent = 1
     w%jnexti = 1
     jdywet = w%jdybg - 1
     w%kstg = 0
@@ -266,14 +267,28 @@ contains
             call irrigate(w)
           end if
         else
-          if (w%irigno < 1) w%irigno = 1
-          if (w%irrtyp == 2) then
-            ! Known irrigation dates and depths.
-            if (int(w%fdirrig(w%irigno,1)) /= jday) exit irrigation
-            w%groirr = w%fdirrig(w%irigno,2)
-            w%netirr = w%groirr*w%fdirrig(w%irigno,3)
-            w%dinf = w%netirr
-            w%irigno = w%irigno + 1
+          if (fix_on(w, FIX_IRRIGATION_COUNT)) then
+            if (w%irrtyp == 2) then
+              ! Known irrigation dates and depths, with their own index.
+              if (int(w%fdirrig(w%ievent,1)) /= jday) exit irrigation
+              w%groirr = w%fdirrig(w%ievent,2)
+              w%netirr = w%groirr*w%fdirrig(w%ievent,3)
+              w%dinf = w%netirr
+              w%ievent = w%ievent + 1
+              w%irigno = w%irigno + 1
+              if (w%irigno == 1) w%jfirst = jday
+            end if
+          else
+            ! The original used IRIGNO as the index of the next known
+            ! irrigation and started it at 1 for every irrigated run.
+            if (w%irigno < 1) w%irigno = 1
+            if (w%irrtyp == 2) then
+              if (int(w%fdirrig(w%irigno,1)) /= jday) exit irrigation
+              w%groirr = w%fdirrig(w%irigno,2)
+              w%netirr = w%groirr*w%fdirrig(w%irigno,3)
+              w%dinf = w%netirr
+              w%irigno = w%irigno + 1
+            end if
           end if
           if (w%irrtyp > 2) then
             if ((w%gdd < w%gstart) .or. (w%gdd > w%gstop)) exit irrigation

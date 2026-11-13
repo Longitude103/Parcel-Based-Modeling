@@ -1,7 +1,7 @@
 """Measure what each bug fix changes, and by how much, on the test parcels.
 
-Runs every scenario in tests/scenarios.py (37 setups x 3 soils x 6 years,
-666 runs, each soil carrying its own state) through the kernel with no
+Runs every scenario in tests/scenarios.py (35 setups x 3 soils x 6 years,
+630 runs, each soil carrying its own state) through the kernel with no
 fixes, with each fix alone, and with all fixes, and writes the differences
 to docs/kernel/fix-impact.md.
 

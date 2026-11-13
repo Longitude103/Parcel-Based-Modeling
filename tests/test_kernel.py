@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 import scenarios as sc
-from cropsim import CropSimError, Engine, Kernel
+from cropsim import ALL_FIXES, CropSimError, Engine, Kernel
 
 GOLDEN = Path(__file__).resolve().parent / "golden" / "original.csv"
 
@@ -137,3 +137,19 @@ def test_bad_input_is_an_error(inp, kernel):
     with pytest.raises(CropSimError) as err:
         kernel.run_year(sim, inp.soils[622], inp.weather[2012], inp.initial)
     assert err.value.status == 11
+
+
+@pytest.mark.parametrize("irrsch", [0, 4, 5, 6])
+def test_unsupported_scheduling_is_an_error(inp, kernel, irrsch):
+    """Only IRRSCH 1-3 are supported; the forecast methods (4, 5) and the
+    unimplemented 6 are rejected, with or without fixes."""
+    sim = sc.scenarios()["corn_pivot"].copy()
+    sim.irrsch = irrsch
+    for fixes in (0, ALL_FIXES):
+        r = kernel.run_year(sim, inp.soils[622], inp.weather[2012], inp.initial,
+                            fixes=fixes, raise_on_error=False)
+        assert r.status == 11
+    # Dryland runs do not schedule irrigation, so IRRSCH is not checked.
+    dry = sc.scenarios()["corn_dry"].copy()
+    dry.irrsch = irrsch
+    assert kernel.run_year(dry, inp.soils[622], inp.weather[2012], inp.initial).status == 0

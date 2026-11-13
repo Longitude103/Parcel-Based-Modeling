@@ -68,17 +68,16 @@ it on.
 the next known irrigation date, so it is set to 1 before the first
 irrigation in every irrigated run. Demand-scheduled runs then report one
 irrigation too many, and since the count never passes through 1 after an
-irrigation, the first irrigation date `JFIRST` is never recorded. The
-forecast methods (IRRSCH 4 and 5) also count every day that passes the
-date and GDD checks, irrigated or not.
+irrigation, the first irrigation date `JFIRST` is never recorded. (The
+original's forecast methods, IRRSCH 4 and 5, also counted every day that
+passed the date and GDD checks; the kernel no longer accepts them.)
 
 **Fix.** Known irrigation dates use their own index; `IRIGNO` counts only
 days with water applied, and `JFIRST` is the first of them. Water applied
 is unchanged.
 
-**Test.** `test_irrigation_count` for demand, forecast and known-date
-runs: off, the count is the number of irrigated days plus one (much more
-for the forecast method) and `JFIRST` is 0; on, both match the daily
+**Test.** `test_irrigation_count` for demand and known-date runs: off,
+the count is the number of irrigated days plus one and `JFIRST` is 0; on, both match the daily
 irrigation record.
 
 ## ROTATION_FREQUENCY: rotation deliveries ignore the rotation interval

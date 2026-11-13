@@ -53,8 +53,6 @@ def scenarios() -> dict[str, Sim]:
         "corn_pivot": _sim("CRNIRR01"),
         "corn_dry": _sim("CRNDRY01"),
         "corn_district_demand": _sim("CRNIRR01", irrsch=2),
-        "corn_forecast_rain": _sim("CRNIRR01", irrsch=4),
-        "corn_forecast_balance": _sim("CRNIRR01", irrsch=5),
         "corn_furrow": _sim("CRNIRR01", irrtyp=4, ereuse=[0.3] * 5, prunof=[0.25] * 5,
                             eapp=[0.65] * 5),
         "corn_border": _sim("CRNIRR01", irrtyp=5, irrsch=3, jfirst=150, jstopi=0, jgoi=0,

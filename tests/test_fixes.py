@@ -75,7 +75,7 @@ def test_snowmelt_base(kernel, inp):
     assert melt_below_32[Fix.SNOWMELT_BASE] == 0
 
 
-@pytest.mark.parametrize("name", ["corn_pivot", "corn_forecast_rain", "corn_known_dates"])
+@pytest.mark.parametrize("name", ["corn_pivot", "corn_known_dates"])
 def test_irrigation_count(kernel, inp, name):
     for fixes in (Fix.NONE, Fix.IRRIGATION_COUNT):
         for r in chain(kernel, inp, name, fixes=fixes):
@@ -84,8 +84,6 @@ def test_irrigation_count(kernel, inp, name):
             if fixes:
                 assert r.annual["irigno"] == len(days)
                 assert r.annual["jfirst"] == days[0]
-            elif name == "corn_forecast_rain":
-                assert r.annual["irigno"] > len(days) + 1   # counts dry checks too
             else:
                 assert r.annual["irigno"] == len(days) + 1
                 assert r.annual["jfirst"] == 0

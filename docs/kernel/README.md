@@ -62,16 +62,16 @@ layout (the tests do this for the header).
    fixture inputs, and checks that the kernel (no fixes) reproduces its
    yearly, monthly and weekly output files and final `INITIAL.DAT`
    character for character.
-2. `tests/test_kernel.py` runs 37 crop and irrigation setups (all 22 crop
+2. `tests/test_kernel.py` runs 35 crop and irrigation setups (all 22 crop
    codes, every irrigation type and scheduling method, terraces, known
-   irrigation dates) on 3 soils for 6 years each, 666 runs, through the
+   irrigation dates) on 3 soils for 6 years each, 630 runs, through the
    kernel and through the reference engine (the frozen original with only
    the library edits) and requires every annual, monthly, weekly and state
    value to be bit-for-bit equal.
 3. The same runs are pinned in `tests/golden/original.csv`
    (`tools/make_golden.py`), so a change to the reference or the build that
    moves results is also caught.
-4. The same 666 runs are made on 8 threads at once and must match.
+4. The same 630 runs are made on 8 threads at once and must match.
 
 The kernel is built with `-O2 -ffp-contract=off` (no fast-math, no fused
 multiply-add), the same as the reference, so the two round identically.
@@ -87,16 +87,13 @@ only by rewriting the code and were not in the earlier review:
   years to 15 is undone with a test that also catches real fallow. Its
   yield is then computed as wheat (NaN) and next year starts with a "live"
   wheat crop.
-* The forecast scheduling methods (IRRSCH 4 and 5) count a day as an
-  irrigation even when no water is applied, so IRIGNO is 3-4 times the real
-  number of irrigations.
 * `INFMON` (monthly infiltration) is always 0: it is summed after
   infiltration has reset the value to 0.
 
-Where the original read memory outside an array (forecast rain past day
-366, `GDDS(0)` for a Jan 1 planting, the yield trend for crops 12-22),
-the kernel uses zero, zero and no trend, and documents it here; the
-original's values there were whatever happened to be in memory.
+Where the original read memory outside an array (`GDDS(0)` for a Jan 1
+planting, the yield trend for crops 12-22), the kernel uses zero and no
+trend, and documents it here; the original's values there were whatever
+happened to be in memory.
 
 ## Fixes
 
@@ -117,13 +114,17 @@ irrigation and runoff on the test parcels. The original is always one
   (`LEAP_CALENDAR`).
 * Tailwater: applies only to furrow irrigation, IRRTYP 4
   (`TAILWATER_FURROW`).
+* Scheduling methods: only IRRSCH 1-3 are supported. The forecast
+  methods (4 and 5, which assume the coming days' rain is known) and 6
+  (read but never implemented, so it never irrigated) return
+  `CSK_ERR_BAD_INPUT` for irrigated runs. This is input validation, not a
+  fix switch; the frozen original and the reference engine still run them.
 
 ## Not fixed yet (need a decision)
 
 These look wrong but the right answer is a modelling choice, so they are
 left as the original for now:
 
-* Irrigation scheduling method 6 (IRRSCH 6).
 * `JSTOPI` / `JGOI` are read in a different order by the Python legacy
   reader than the Fortran reader.
 

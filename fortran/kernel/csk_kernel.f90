@@ -345,6 +345,10 @@ contains
       if ((simp%crop < 1) .or. (simp%crop > NCROP)) return
       if ((simp%layers < 1) .or. (simp%layers > NLAY)) return
       if ((simp%irrtyp < 1) .or. (simp%irrtyp > 5)) return
+      ! Scheduled irrigation (IRRTYP 3-5) supports IRRSCH 1-3 only; the
+      ! original's forecast methods (4, 5) and the unimplemented 6 are
+      ! rejected (decided by Heath, 2026-11-13).
+      if ((simp%irrtyp >= 3) .and. ((simp%irrsch < 1) .or. (simp%irrsch > 3))) return
       if ((simp%ntills < 0) .or. (simp%ntills > NTILL)) return
       if ((simp%kirr < 0) .or. (simp%kirr > NEVENT)) return
       if (simp%crop == 10 .and. ((simp%ncut < 1) .or. (simp%ncut > 5))) return

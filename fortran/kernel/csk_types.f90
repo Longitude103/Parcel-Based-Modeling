@@ -68,6 +68,9 @@ module csk_types
   ! Known-date irrigation runs (IRRTYP 2) keep runoff and snow out of
   ! effective rain (original DEPLT 2032).
   integer, parameter, public :: FIX_KNOWN_DATE_RAIN = 512
+  ! After maturity the residue factor is applied to the curve number
+  ! once, not twice (original EFPRECIP 1641).
+  integer, parameter, public :: FIX_RESIDUE_CN = 1024
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).

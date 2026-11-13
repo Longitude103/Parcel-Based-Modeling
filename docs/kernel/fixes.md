@@ -24,6 +24,7 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 7 | 128 | `WETLAND_BALANCE` | Wetland, riparian woodland and open water: DP and a new supply term (WETSUPS) |
 | 8 | 256 | `DRAINAGE_SPREAD` | DP and soil water where layers sit at field capacity (mostly wetlands); closes the water balance |
 | 9 | 512 | `KNOWN_DATE_RAIN` | Known-date irrigation runs (IRRTYP 2): effective rain, so DP and ET |
+| 10 | 1024 | `RESIDUE_CN` | Row crops after maturity: runoff, so infiltration and DP |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -215,3 +216,17 @@ than 0.1 in; on, effective rain is less than total and the balance closes.
 This matters for the two-pass irrigation design, whose applied-water pass
 uses `IRRTYP 2`. It was suspected in the technical reference and is now
 confirmed.
+
+## RESIDUE_CN: residue reduction applied twice to the curve number
+
+**Original** (EFPRECIP 1641). For row and grain crops the curve number is
+reduced for surface residue by `(1 - CNFACT)`. After maturity it is set to
+`CNFALO * (1 - CNFACT)`, but `CNFALO` already includes that factor, so
+post-harvest runoff is too low where there is residue.
+
+**Fix.** After maturity use `CNFALO`.
+
+**Test.** `test_residue_cn`: dryland corn; runoff before maturity is
+unchanged and runoff after maturity is higher with the fix on.
+
+Suspected in the technical reference; confirmed.

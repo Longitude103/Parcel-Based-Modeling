@@ -188,3 +188,20 @@ def test_known_date_rain(kernel, inp):
     for r in on:
         assert r.annual["eprecips"] < r.annual["precips"]
         assert abs(r.annual["balerr"]) < 1e-3
+
+
+def test_residue_cn(kernel, inp):
+    """After maturity the curve number had the residue reduction twice, so
+    runoff was too low; the fix raises post-harvest runoff only."""
+    off = chain(kernel, inp, "corn_dry", fixes=Fix.NONE)
+    on = chain(kernel, inp, "corn_dry", fixes=Fix.RESIDUE_CN)
+    # First year: identical up to maturity (later years start from a
+    # different soil state).
+    mat = off[0].annual["jdymat"]
+    assert off[0].daily["runoff"][:mat] == on[0].daily["runoff"][:mat]
+    more = 0.0
+    for a, b in zip(off, on):
+        mat = a.annual["jdymat"]
+        assert sum(b.daily["runoff"][mat:]) >= sum(a.daily["runoff"][mat:])
+        more += sum(b.daily["runoff"][mat:]) - sum(a.daily["runoff"][mat:])
+    assert more > 0.05

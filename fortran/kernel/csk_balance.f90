@@ -239,7 +239,7 @@ contains
         else
           call snowmelt(w, 0.0)          ! SMTMP was never set in the original
         end if
-        call effective_precip(w, .false.)
+        call effective_precip(w, fix_on(w, FIX_RESIDUE_CN))
         if ((w%eprecip > w%rain) .and. (w%iterrc == 0)) then
           if (w%status == 0) w%status = CSK_ERR_EFF_PRECIP
         end if

@@ -1,7 +1,7 @@
 """Measure what each bug fix changes, and by how much, on the test parcels.
 
-Runs every scenario in tests/scenarios.py (35 setups x 3 soils x 6 years,
-630 runs, each soil carrying its own state) through the kernel with no
+Runs every scenario in tests/scenarios.py (36 setups x 3 soils x 6 years,
+648 runs, each soil carrying its own state) through the kernel with no
 fixes, with each fix alone, and with all fixes, and writes the differences
 to docs/kernel/fix-impact.md.
 
@@ -271,6 +271,8 @@ def main() -> None:
         "state carried over from Dec 31 instead of Dec 30.",
         "* **TAILWATER_FURROW** changes only `corn_border`, the one IRRTYP 5 setup on "
         "rotation scheduling.",
+        "* **FORAGE_CUTOFF** changes only `range_rotation`, native pasture on rotation "
+        "with a summer shut-off.",
         "* **SNOWMELT_BASE** touches every run because snow melted at 0 F instead of 32 F, "
         "so the original melted snow on most winter days.",
         "",

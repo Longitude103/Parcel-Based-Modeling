@@ -397,6 +397,26 @@ def test_tailwater_furrow(kernel, inp):
     b = kernel.run_year(furrow, inp.soils[622], w, inp.initial, fixes=Fix.TAILWATER_FURROW)
     assert a.annual == b.annual
 
+
+def test_forage_cutoff(kernel, inp):
+    """Native pasture (crop 13) on rotation with a summer shut-off from day
+    200 to 240: the original ignores it (and the Nov 1 stop) for crop 13,
+    as it does not for irrigated pasture (crop 12)."""
+    sim = sc.scenarios()["range_rotation"]
+    w = inp.weather[2012]
+    shut = range(sim.jstopi, sim.jgoi - 1)          # days jstopi+1 .. jgoi-1, 0-based
+    off = kernel.run_year(sim, inp.soils[622], w, inp.initial)
+    on = kernel.run_year(sim, inp.soils[622], w, inp.initial, fixes=Fix.FORAGE_CUTOFF)
+    assert any(off.daily["grirr"][d] > 0 for d in shut)
+    assert not any(on.daily["grirr"][d] > 0 for d in shut)
+    assert not any(on.daily["grirr"][d] > 0 for d in range(304, 366))
+    # Irrigated pasture already has the shut-off; the fix changes nothing.
+    past = sc.scenarios()["pasture_rotation"]
+    a = kernel.run_year(past, inp.soils[622], w, inp.initial)
+    b = kernel.run_year(past, inp.soils[622], w, inp.initial, fixes=Fix.FORAGE_CUTOFF)
+    assert a.annual == b.annual
+    assert not any(a.daily["grirr"][d] > 0 for d in range(past.jstopi, past.jgoi - 1))
+
 @pytest.mark.parametrize("name", list(sc.scenarios()))
 def test_all_fixes_close_the_water_balance(kernel, inp, name):
     """With every fix on, storage change equals inflow minus outflow for

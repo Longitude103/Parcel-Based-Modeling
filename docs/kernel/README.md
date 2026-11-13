@@ -62,16 +62,16 @@ layout (the tests do this for the header).
    fixture inputs, and checks that the kernel (no fixes) reproduces its
    yearly, monthly and weekly output files and final `INITIAL.DAT`
    character for character.
-2. `tests/test_kernel.py` runs 35 crop and irrigation setups (all 22 crop
+2. `tests/test_kernel.py` runs 36 crop and irrigation setups (all 22 crop
    codes, every irrigation type and scheduling method, terraces, known
-   irrigation dates) on 3 soils for 6 years each, 630 runs, through the
+   irrigation dates) on 3 soils for 6 years each, 648 runs, through the
    kernel and through the reference engine (the frozen original with only
    the library edits) and requires every annual, monthly, weekly and state
    value to be bit-for-bit equal.
 3. The same runs are pinned in `tests/golden/original.csv`
    (`tools/make_golden.py`), so a change to the reference or the build that
    moves results is also caught.
-4. The same 630 runs are made on 8 threads at once and must match.
+4. The same 648 runs are made on 8 threads at once and must match.
 
 The kernel is built with `-O2 -ffp-contract=off` (no fast-math, no fused
 multiply-add), the same as the reference, so the two round identically.
@@ -119,14 +119,11 @@ irrigation and runoff on the test parcels. The original is always one
   (read but never implemented, so it never irrigated) return
   `CSK_ERR_BAD_INPUT` for irrigated runs. This is input validation, not a
   fix switch; the frozen original and the reference engine still run them.
+* Rotation summer shut-off (`JSTOPI`, `JGOI`): read from either SIM
+  layout without hand edits, `upgrade_sim` to convert old files, and the
+  shut-off applied to crops 10-13 (`FORAGE_CUTOFF`).
 
-## Not fixed yet (need a decision)
-
-These look wrong but the right answer is a modelling choice, so they are
-left as the original for now:
-
-* `JSTOPI` / `JGOI` are read in a different order by the Python legacy
-  reader than the Fortran reader.
+All the items from the original review are now decided.
 
 ## Newer methods
 

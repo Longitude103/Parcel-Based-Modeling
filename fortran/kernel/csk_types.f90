@@ -86,7 +86,7 @@ module csk_types
   ! Summer fallow (crop 15) stays fallow; the original turned dryland
   ! fallow into winter wheat at the end of the year (original DEPLT 2719-2732).
   integer, parameter, public :: FIX_FALLOW_CROP = 32768
-  ! Perennial covers (crops 10-14, 16-19) keeps its roots at RZMAX all year; the original grew them with GDDFLO, which these crops never set (original ROOTZN 1742).
+  ! Perennial covers (crops 10-14, 16-19) keep their roots at RZMAX all year; the original grew them with GDDFLO, which these crops never set (original ROOTZN 1742).
   integer, parameter, public :: FIX_PERENNIAL_ROOTS = 65536
   ! RZMIN is capped at the soil-scaled RZMAX, so roots never start deeper than the soil allows (original 849-856 scales RZMAX only).
   integer, parameter, public :: FIX_RZMIN_CAP = 131072
@@ -94,6 +94,8 @@ module csk_types
   integer, parameter, public :: FIX_LEAP_CALENDAR = 262144
   ! Tailwater runoff and reuse apply only to furrow irrigation (IRRTYP 4), as in demand scheduling; the original's rotation delivery also applied them to IRRTYP 5 (original IRRIGA 2857).
   integer, parameter, public :: FIX_TAILWATER_FURROW = 524288
+  ! Rotation deliveries (IRRSCH 3) for native pasture (crop 13) follow the same summer shut-off (JSTOPI-JGOI) and Nov 1 stop as alfalfa, hay and irrigated pasture; the original applied them to crops 10-12 only (original DEPLT 2100).
+  integer, parameter, public :: FIX_FORAGE_CUTOFF = 1048576
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).

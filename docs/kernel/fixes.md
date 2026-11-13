@@ -34,6 +34,7 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 17 | 131072 | `RZMIN_CAP` | Shallow soils where RZMIN exceeds the scaled RZMAX: root depth, so T, NIR, DP |
 | 18 | 262144 | `LEAP_CALENDAR` | Leap years: SIM dates after February (a day later), the last day simulated (Dec 31), and monthly totals |
 | 19 | 524288 | `TAILWATER_FURROW` | Rotation-scheduled IRRTYP 5: infiltrated irrigation, so DP and ET |
+| 20 | 1048576 | `FORAGE_CUTOFF` | Native pasture (crop 13) on rotation: summer shut-off and Nov 1 stop, so NIR, ET, DP |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -416,3 +417,36 @@ demand scheduling.
 rotation (`corn_border`). Off, each day's infiltrated water is the gross
 depth times `1 - (1 - EREUSE)*PRUNOF`; on, it is the gross depth times
 `EAPP`. A furrow (`IRRTYP` 4) rotation run is unchanged.
+
+## FORAGE_CUTOFF: rotation shut-off for crops 10-13
+
+**Original** (SIM reader 899-905; DEPLT 2100-2104). Rotation delivery
+(`IRRSCH` 3) can pause in summer, between `JSTOPI` and `JGOI`, while water
+goes to row crops, and stops after Nov 1. The DEPLT test applies both to
+crops 10-12. The SIM reader, though, reads `JSTOPI` and `JGOI` only for
+crops *other than* 10-13 (which never use them) and reads just `JDFREQ
+DDEPTH` for 10-13. So in the original the shut-off never takes effect
+(the values are 0, or left over from the previous SIM file in the run),
+and native pasture (13) has neither the shut-off nor the Nov 1 stop.
+
+**Fix.** Decided by Heath (2026-11-13), in two parts:
+
+* *Reader* (`cropsim.legacy.read_sim`, no switch). The rotation line's
+  layout is taken from the line itself, so no one has to hand-edit a SIM
+  file. Four numbers are read as `JSTOPI JGOI JDFREQ DDEPTH` for any crop.
+  Two numbers are read as `JDFREQ DDEPTH`, the older layout, which means no
+  shut-off, as in the original; a note is logged. Anything else, such as
+  values split over lines, is read as the original reads it. A comment
+  after the numbers is ignored. `cropsim.legacy.upgrade_sim(path)` rewrites
+  a two-number line as `0 0 JDFREQ DDEPTH` (the same results) and keeps a
+  `.bak` copy; the new values can then be edited. The original v8.0
+  program reads only two values for crops 10-13, so it misreads an
+  upgraded forage file; use the backup with it.
+* *Kernel switch.* Crop 13 gets the same shut-off and Nov 1 stop as
+  crops 10-12.
+
+**Test.** `test_forage_cutoff`: native pasture on rotation with a
+shut-off from day 200 to 240 (`range_rotation`). Off, water is delivered
+in the shut-off; on, none is delivered in it or after Nov 1. Irrigated
+pasture (12) already has the shut-off and does not change. The reader and
+upgrade are tested in `tests/test_legacy_sim.py`.

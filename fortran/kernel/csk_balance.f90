@@ -246,7 +246,8 @@ contains
           ! after Nov 1 (forage) or maturity (other crops), and not in
           ! the summer shut-off for alfalfa, hay and pasture.
           if (jday < w%jfirst) exit irrigation
-          if ((crop >= 10) .and. (crop <= 12)) then
+          if ((crop >= 10) .and. (crop <= 12) .or. &
+              (crop == 13 .and. fix_on(w, FIX_FORAGE_CUTOFF))) then
             if ((jday > w%jstopi) .and. (jday < w%jgoi)) exit irrigation
             if (jday > 304) exit irrigation
           else

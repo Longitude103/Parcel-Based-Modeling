@@ -92,6 +92,8 @@ def scenarios() -> dict[str, Sim]:
         "pasture_rotation": _forage(12, True, irrsch=3, jfirst=120, jstopi=200, jgoi=240,
                                     jdfreq=14, ddepth=1.5),
         "range": _sim("NRANGE01"),
+        "range_rotation": _forage(13, True, irrsch=3, jfirst=120, jstopi=200, jgoi=240,
+                                  jdfreq=14, ddepth=1.5),
         "turf_pivot": _forage(14, True),
         "fallow": _forage(15, False),
         "farmstead": _forage(22, False),

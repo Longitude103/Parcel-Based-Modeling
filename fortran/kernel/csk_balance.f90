@@ -218,7 +218,12 @@ contains
         w%kstg = 1
         if (w%gdd > w%gddflo) w%kstg = 2
         if (w%gdd > w%gddripe) w%kstg = 3
-        if ((crop == 10) .or. (crop == 11)) w%kstg = w%icut
+        if ((crop == 10) .or. (crop == 11)) then
+          ! The original set ICUT to 1 at the start and never updated it
+          ! here (CROPCO, which tracks cuttings, ran before DEPLT).
+          if (fix_on(w, FIX_FORAGE_CUTTING_STAGE)) w%icut = cutting_cycle(w%icut)
+          w%kstg = w%icut
+        end if
       else
         w%kstg = 1
         if (w%gdd > w%gddefc) w%kstg = 2
@@ -532,6 +537,19 @@ contains
     end if
 
   contains
+
+    ! Cutting cycle for the day, by the same rules CROPCO uses.
+    integer function cutting_cycle(prev) result(ic)
+      integer, intent(in) :: prev
+      integer :: k
+      ic = prev
+      if (jday < w%jdycut(1)) ic = 1
+      if ((jday >= w%jdycut(1)) .and. (jday < w%jdycut(2))) ic = 2
+      do k = 3, 5
+        if ((jday > w%jdycut(k-1)) .and. (jday < w%jdycut(k))) ic = k
+      end do
+      if (jday >= w%jdycut(max(w%ncut, 1))) ic = max(w%ncut, 1)
+    end function cutting_cycle
 
     real function storage()
       integer :: k

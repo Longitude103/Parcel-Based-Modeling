@@ -34,6 +34,7 @@ extern "C" {
 #define CSK_FIX_SNOWMELT_BASE                 2  /* Snow melts above params%smtmp (default 32 F) instead of an unset SMTMP of 0 F (original SNOWMELT 3994-3999). */
 #define CSK_FIX_IRRIGATION_COUNT              4  /* Irrigation count and first irrigation date count real irrigations (original DEPLT 2123, IRRIGA 2869-2925). */
 #define CSK_FIX_ROTATION_FREQUENCY            8  /* Rotation deliveries (IRRSCH 3) at most every JDFREQ days (original DEPLT 2111, JDFREQ read but never used). */
+#define CSK_FIX_FORAGE_CUTTING_STAGE         16  /* Alfalfa and hay use the current cutting cycle as the growth stage in the water balance (original DEPLT 1880, 1953; ICUT stuck at 1). */
 
 /* BLOCK.DAT and TILLAGE.DAT. */
 typedef struct {

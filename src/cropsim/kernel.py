@@ -28,6 +28,8 @@ class Fix(enum.IntFlag):
     """Irrigation count and first irrigation date count real irrigations (original DEPLT 2123, IRRIGA 2869-2925)."""
     ROTATION_FREQUENCY = 8
     """Rotation deliveries (IRRSCH 3) at most every JDFREQ days (original DEPLT 2111, JDFREQ read but never used)."""
+    FORAGE_CUTTING_STAGE = 16
+    """Alfalfa and hay use the current cutting cycle as the growth stage in the water balance (original DEPLT 1880, 1953; ICUT stuck at 1)."""
 
 ALL_FIXES = Fix(0)
 for _f in Fix:

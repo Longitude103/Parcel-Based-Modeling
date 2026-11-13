@@ -103,3 +103,21 @@ def test_rotation_frequency(kernel, inp, name):
         gaps[fixes] = g
     assert min(gaps[Fix.NONE]) < freq
     assert min(gaps[Fix.ROTATION_FREQUENCY]) >= freq
+
+
+def test_forage_cutting_stage(kernel, inp):
+    """Stage 1 limits apply all season with the fix off, cycle limits on."""
+    sim = sc.scenarios()["alfalfa_pivot"].copy()
+    sim.apmin = [0.75, 0.5, 0.5, 0.5, 0.5]
+    sim.apmax = [1.25, 0.8, 0.8, 0.8, 0.8]
+    cut1 = sim.jdycut[0]
+    for fixes in (Fix.NONE, Fix.FORAGE_CUTTING_STAGE):
+        late = []
+        for r in chain(kernel, inp, None, fixes=fixes, sim=sim):
+            late += [r.daily["grirr"][d] for d in season(r)
+                     if d + 1 > cut1 and r.daily["grirr"][d] > 0]
+        assert late
+        if fixes:
+            assert max(late) <= 0.8 + 1e-6
+        else:
+            assert min(late) >= 0.75 - 1e-6

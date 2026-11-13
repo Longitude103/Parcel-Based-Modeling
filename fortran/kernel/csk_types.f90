@@ -50,6 +50,9 @@ module csk_types
   ! Rotation deliveries (IRRSCH 3) at most every JDFREQ days
   ! (original DEPLT 2111, JDFREQ read but never used).
   integer, parameter, public :: FIX_ROTATION_FREQUENCY = 8
+  ! Alfalfa and hay use the current cutting cycle as the growth stage
+  ! in the water balance (original DEPLT 1880, 1953; ICUT stuck at 1).
+  integer, parameter, public :: FIX_FORAGE_CUTTING_STAGE = 16
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).

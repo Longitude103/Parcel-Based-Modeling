@@ -18,6 +18,7 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 1 | 2 | `SNOWMELT_BASE` | Snow melt timing, so winter runoff and infiltration |
 | 2 | 4 | `IRRIGATION_COUNT` | Reported irrigation count (IRIGNO) and first irrigation day (JFIRST) only |
 | 3 | 8 | `ROTATION_FREQUENCY` | Rotation (IRRSCH 3) delivery count, so NIR, ET, DP |
+| 4 | 16 | `FORAGE_CUTTING_STAGE` | Alfalfa and hay: irrigation limits by cutting, deficits and yield by cutting |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -83,3 +84,24 @@ setups): off, deliveries come closer together than `JDFREQ`; on, never.
 only for crops 10-12, so alfalfa and pasture use stale values. The kernel
 takes them from the SIM input as given; the Python `legacy.read_sim`
 reader still follows the original file layout.
+
+## FORAGE_CUTTING_STAGE: alfalfa stage stuck at cutting 1
+
+**Original** (DEPLT 1880, 1953, 2151-2153). For alfalfa and hay the growth
+stage is the cutting cycle `ICUT`. `CROPCO` tracks it, but CropSim now
+calls `CROPCO` once for the whole year before `DEPLT`, and `DEPLT`
+resets `ICUT` to 1 and never updates it. So allowable depletion, rain
+allowance, efficiency and the minimum, maximum and smallest application
+always use the stage 1 values, and all transpiration deficits are booked
+to cutting 1.
+
+**Fix.** `DEPLT` works out the cutting cycle each day from the cutting
+dates, with the same rules as `CROPCO`.
+
+**Test.** `test_forage_cutting_stage`: alfalfa with smaller application
+limits after the first cutting. Off, every later irrigation still uses the
+first cycle's limits; on, the later cycles' limits apply.
+
+The fixture SIM files use the same values for every stage, so this fix
+changes nothing on the standard test parcels; it matters wherever SIM
+files give different values by cutting.

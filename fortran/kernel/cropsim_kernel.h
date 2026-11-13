@@ -45,6 +45,7 @@ extern "C" {
 #define CSK_FIX_DRAINAGE_CLOCK             4096  /* The drainage clock restarts only when water soaks in, not on every irrigation check or snow day (original DEPLT 2018-2034, 2146). */
 #define CSK_FIX_INFILTRATION_OUTPUT        8192  /* Monthly infiltration (INFMON) reports the water that soaked in; the original always reported 0 (original DEPLT 2563). */
 #define CSK_FIX_ET_ACCUMULATION           16384  /* Seasonal ET for yield (ETMAX, ETYLD) adds the day's evaporation, not the last computed one (original DEPLT 2201, 2327). */
+#define CSK_FIX_FALLOW_CROP               32768  /* Summer fallow (crop 15) stays fallow; the original turned dryland fallow into winter wheat at the end of the year (original DEPLT 2719-2732). */
 
 /* BLOCK.DAT and TILLAGE.DAT. */
 typedef struct {

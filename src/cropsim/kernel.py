@@ -50,6 +50,8 @@ class Fix(enum.IntFlag):
     """Monthly infiltration (INFMON) reports the water that soaked in; the original always reported 0 (original DEPLT 2563)."""
     ET_ACCUMULATION = 16384
     """Seasonal ET for yield (ETMAX, ETYLD) adds the day's evaporation, not the last computed one (original DEPLT 2201, 2327)."""
+    FALLOW_CROP = 32768
+    """Summer fallow (crop 15) stays fallow; the original turned dryland fallow into winter wheat at the end of the year (original DEPLT 2719-2732)."""
 
 ALL_FIXES = Fix(0)
 for _f in Fix:

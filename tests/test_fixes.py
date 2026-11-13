@@ -279,3 +279,19 @@ def test_et_accumulation(kernel, inp):
     a = kernel.run_year(sim, inp.soils[622], w, inp.initial)
     b = kernel.run_year(sim, inp.soils[622], w, inp.initial, fixes=Fix.ET_ACCUMULATION)
     assert a.annual == b.annual
+
+
+def test_fallow_crop(kernel, inp):
+    off = chain(kernel, inp, "fallow", fixes=Fix.NONE)
+    on = chain(kernel, inp, "fallow", fixes=Fix.FALLOW_CROP)
+    sim = sc.scenarios()["fallow"]
+    for r in off:
+        assert r.state.oldcrp == 7                 # left as winter wheat
+        assert math.isnan(r.annual["yield"])       # yield computed as wheat
+    assert all(r.state.livecrop == 1 for r in off)   # "wheat planted this fall"
+    for r in on:
+        assert r.state.oldcrp == 15 and r.state.livecrop == 0
+        assert r.annual["yield"] == sim.ymax
+        assert r.crop_yr == 15 and r.crop_mon == 15
+    # The water balance of the year itself is the same.
+    assert [r.annual["ets"] for r in off] == [r.annual["ets"] for r in on]

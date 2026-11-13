@@ -588,7 +588,7 @@ contains
     ! (original 2719-2732). Real summer fallow (crop 15) therefore left
     ! DEPLT as winter wheat, which then drives the yield and the wheat
     ! live-crop flag for the next year.
-    if (w%iyear > 1938) then
+    if (w%iyear > 1938 .and. .not. fix_on(w, FIX_FALLOW_CROP)) then
       if ((crop == 15) .and. (w%livecrop == 0) .and. (w%irrtyp == 1) .and. &
           (w%itflag /= 3)) w%crop = 7
     end if

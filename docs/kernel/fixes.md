@@ -29,6 +29,7 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 12 | 4096 | `DRAINAGE_CLOCK` | Timing of deep percolation (faster); small change in annual DP and ET |
 | 13 | 8192 | `INFILTRATION_OUTPUT` | Monthly infiltration output (INFMON) only |
 | 14 | 16384 | `ET_ACCUMULATION` | Seasonal ET for the yield model (ETMAX, ETYLD) on very low-ET days only |
+| 15 | 32768 | `FALLOW_CROP` | Summer fallow: end-of-year crop, live-crop flag and yield (then next year's wheat logic) |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -299,3 +300,24 @@ but the seasonal ET totals used for yield (`ETMAX`, `ETYLD`) still add
 **Test.** `test_et_accumulation`: corn with some very dull mid-season days
 (ETR 0.001 in): `ETMAX` is larger with the fix off. With ordinary weather
 the results are identical, since such days do not occur.
+
+## FALLOW_CROP: summer fallow becomes winter wheat
+
+Found while rewriting `DEPLT`; not in the earlier review.
+
+**Original** (DEPLT 2719-2732). To label dryland wheat-fallow years as
+fallow (15) in the monthly file, `DEPLT` sets `CROP = 15` for such wheat
+years, writes the file, and then sets any crop 15 matching the same test
+back to 7. That test also catches real summer fallow (crop 15, dryland),
+which leaves `DEPLT` as winter wheat. Its yield is then computed as wheat
+from zero transpiration (NaN), its end-of-year state says the last crop
+was wheat, and the wheat "live crop" flag is set (a wheat crop planted
+this fall), which changes the next year's start if wheat follows. The output files still say 15, so
+this does not show in the reports.
+
+**Fix.** Leave crop 15 as 15.
+
+**Test.** `test_fallow_crop`: off, the state after each fallow year says
+wheat with a live crop and the yield is NaN; on, the crop
+stays 15 with no live crop and the yield is `YMAX`, while the year's water
+balance is the same.

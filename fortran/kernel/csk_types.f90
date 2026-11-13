@@ -83,6 +83,9 @@ module csk_types
   ! Seasonal ET for yield (ETMAX, ETYLD) adds the day's evaporation,
   ! not the last computed one (original DEPLT 2201, 2327).
   integer, parameter, public :: FIX_ET_ACCUMULATION = 16384
+  ! Summer fallow (crop 15) stays fallow; the original turned dryland
+  ! fallow into winter wheat at the end of the year (original DEPLT 2719-2732).
+  integer, parameter, public :: FIX_FALLOW_CROP = 32768
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).

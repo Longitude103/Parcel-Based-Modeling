@@ -1,28 +1,31 @@
 """cropsim_kernel.h must describe the same structures as the Fortran kernel.
 
-Compiles a small C program against the header and the built library and
-compares every struct size with csk_struct_size. This is what Rust (or any
-other C caller) relies on.
+Compiles a small C program against the header and compares every struct
+size, and the API version, with what the built library reports. This is
+what Rust (or any other C caller) relies on. The program is not linked to
+the library, so the check also works on a repaired wheel.
 """
 
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
 from cropsim import _lib
 
-ROOT = __import__("pathlib").Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.mark.skipif(sys.platform == "win32" or shutil.which("cc") is None,
                     reason="needs a C compiler")
 def test_header_matches_library(tmp_path):
-    lib = _lib.find_library()
     exe = tmp_path / "header_check"
     subprocess.run(["cc", "-I", str(ROOT / "fortran" / "kernel"),
-                    str(ROOT / "tests" / "c" / "header_check.c"), str(lib),
-                    f"-Wl,-rpath,{lib.parent}", "-o", str(exe)], check=True)
-    out = subprocess.run([str(exe)], capture_output=True, text=True)
-    assert out.returncode == 0, out.stdout + out.stderr
+                    str(ROOT / "tests" / "c" / "header_check.c"), "-o", str(exe)], check=True)
+    version, sizes = subprocess.run([str(exe)], capture_output=True, text=True,
+                                    check=True).stdout.splitlines()
+    lib = _lib.klib()
+    assert int(version) == lib.csk_version()
+    assert [int(s) for s in sizes.split()] == [lib.csk_struct_size(k) for k in range(1, 8)]

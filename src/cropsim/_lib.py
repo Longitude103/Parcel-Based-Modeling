@@ -179,7 +179,7 @@ def lib() -> ctypes.CDLL:
 # The SIM, soil, weather and state structures have the same layout as the
 # reference engine's, so SimT, SoilT, WeatherT and StateT serve both.
 
-KERNEL_API_VERSION = 1
+KERNEL_API_VERSION = 2
 
 
 class ParamsT(ctypes.Structure):
@@ -200,7 +200,7 @@ class ParamsT(ctypes.Structure):
 
 
 class OptionsT(ctypes.Structure):
-    _fields_ = [("fixes", c_int), ("livecond", c_int), ("legacy_round", c_int),
+    _fields_ = [("revert", c_int), ("livecond", c_int), ("legacy_round", c_int),
                 ("reserved", c_int)]
 
 

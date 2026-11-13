@@ -4,7 +4,7 @@
 !  Each routine is the original v8.0 subroutine of the same purpose,
 !  with its module variables replaced by components of the run's
 !  csk_work_t (w). Arithmetic is kept in the original order so that,
-!  with no fixes switched on, results match the original bit for bit.
+!  with every fix reverted, results match the original bit for bit.
 !  Original subroutine names and line numbers are given for each.
 !=======================================================================
 module csk_physics

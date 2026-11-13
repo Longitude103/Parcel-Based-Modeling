@@ -42,7 +42,7 @@ contains
       return
     end if
 
-    w%fixes = opt%fixes
+    w%fixes = not(opt%revert)      ! fixes on unless reverted
     call load_params(w, p)
     w%iyear = wx%year
     w%livecond = opt%livecond

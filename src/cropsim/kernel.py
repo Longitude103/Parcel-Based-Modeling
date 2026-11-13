@@ -2,8 +2,11 @@
 
 `Kernel` runs the same model as `Engine` but through the re-written kernel:
 no global state (safe to call from many threads), daily results, a water
-balance check, and switches for each known bug fix (`Fix`). With
-``fixes=Fix.NONE`` it gives the original program's results.
+balance check, and switches for each known bug fix (`Fix`).
+
+Every fix is on by default (``fixes=ALL_FIXES``). ``fixes=Fix.ORIGINAL``
+(the same as ``Fix.NONE``) gives the original v8.0 results exactly, and one
+fix can be turned off with ``fixes=ALL_FIXES & ~Fix.LEAP_CALENDAR``.
 """
 
 from __future__ import annotations
@@ -19,6 +22,8 @@ class Fix(enum.IntFlag):
     """Bug-fix switches. Combine with |; see docs/kernel/fixes.md."""
 
     NONE = 0
+    ORIGINAL = 0
+    """No fixes: the original v8.0 program's results (alias of NONE)."""
 
     KC_GDD_LAG = 1
     """Crop coefficient uses the day's GDD, not the previous day's (original READWEAT 3693-3697)."""
@@ -67,6 +72,10 @@ class Fix(enum.IntFlag):
 ALL_FIXES = Fix(0)
 for _f in Fix:
     ALL_FIXES |= _f
+"""Every fix; the default for Kernel.run_year."""
+
+REVERT_ALL = 0x7FFFFFFF
+"""csk_options_t.revert value that turns every fix off (CSK_REVERT_ALL)."""
 
 DAILY = tuple(n[2:] for n in _lib.KDAILY)
 """Names of the daily series in Result.daily (index 0 = Jan 1)."""
@@ -102,9 +111,13 @@ class Kernel:
         return p
 
     def run_year(self, sim: Sim, soil: Soil, weather: Weather, state: State, *,
-                 fixes: Fix | int = Fix.NONE, livecond: bool = False,
+                 fixes: Fix | int = ALL_FIXES, livecond: bool = False,
                  legacy_rounding: bool = False, raise_on_error: bool = True) -> Result:
-        """Run one year; returns results (with .daily) and the end-of-year state."""
+        """Run one year; returns results (with .daily) and the end-of-year state.
+
+        ``fixes`` picks the bug fixes to apply: all of them by default,
+        ``Fix.ORIGINAL`` for the original program's results.
+        """
         n = len(weather.tmax)
         if not 1 <= n <= 366:
             raise ValueError(f"weather must have 1 to 366 days, got {n}")
@@ -116,7 +129,8 @@ class Kernel:
             raise ValueError("at most 20 tillage operations")
         if len(sim.irrigation_events) > 50:
             raise ValueError("at most 50 irrigation events")
-        opt = _lib.OptionsT(fixes=int(fixes), livecond=int(livecond),
+        revert = ~int(fixes) & REVERT_ALL
+        opt = _lib.OptionsT(revert=revert, livecond=int(livecond),
                             legacy_round=int(legacy_rounding))
         out_state = _lib.StateT()
         res = _lib.KResultT()

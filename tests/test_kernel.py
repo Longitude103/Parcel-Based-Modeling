@@ -1,6 +1,6 @@
 """The compute kernel against the original model.
 
-* With no fixes, every test parcel must give exactly the reference
+* With every fix reverted (Fix.ORIGINAL), every test parcel must give exactly the reference
   engine's results (annual, monthly, weekly and end-of-year state), run in
   the same process. The reference engine is the frozen original with only
   the library edits, and test_parity.py checks it against the original
@@ -22,7 +22,8 @@ from pathlib import Path
 import pytest
 
 import scenarios as sc
-from cropsim import ALL_FIXES, CropSimError, Engine, Kernel
+from cropsim import ALL_FIXES, CropSimError, Engine, Fix, Kernel
+from cropsim.kernel import REVERT_ALL
 
 GOLDEN = Path(__file__).resolve().parent / "golden" / "original.csv"
 
@@ -55,7 +56,7 @@ CASES = [(name, soil) for name in sc.scenarios() for soil in sc.SOILS]
 def test_kernel_equals_reference(inp, kernel, engine, name, soil):
     sim = sc.scenarios()[name]
     ref = sc.run_chain(engine.run_year, sim, inp.soils[soil], inp)
-    ker = sc.run_chain(kernel.run_year, sim, inp.soils[soil], inp)
+    ker = sc.run_chain(kernel.run_year, sim, inp.soils[soil], inp, fixes=Fix.ORIGINAL)
     for a, b in zip(ref, ker):
         where = f"{name} soil {soil} year {a.year}"
         assert a.status == b.status, where
@@ -85,7 +86,7 @@ def test_kernel_matches_golden(inp, kernel):
     assert len(rows) == len(CASES) * len(sc.YEARS)
     for name, sim in sc.scenarios().items():
         for soil in sc.SOILS:
-            for r in sc.run_chain(kernel.run_year, sim, inp.soils[soil], inp):
+            for r in sc.run_chain(kernel.run_year, sim, inp.soils[soil], inp, fixes=Fix.ORIGINAL):
                 g = rows[(name, soil, r.year)]
                 assert int(g["status"]) == r.status
                 assert int(g["irigno"]) == r.annual["irigno"]
@@ -118,6 +119,31 @@ def test_threads_give_same_results(inp, kernel):
     with ThreadPoolExecutor(max_workers=8) as pool:
         threaded = list(pool.map(run, jobs))
     assert repr(serial) == repr(threaded)
+
+
+def test_fixed_model_is_the_default(inp, kernel):
+    """No fixes argument runs every fix; Fix.ORIGINAL (= Fix.NONE) reverts
+    them all, and one fix can be reverted on its own."""
+    assert Fix.ORIGINAL == Fix.NONE == 0
+    sim = sc.scenarios()["corn_pivot"]
+    args = (sim, inp.soils[622], inp.weather[2012], inp.initial)
+    default = kernel.run_year(*args)
+    assert default.annual == kernel.run_year(*args, fixes=ALL_FIXES).annual
+    assert default.annual != kernel.run_year(*args, fixes=Fix.ORIGINAL).annual
+    assert abs(default.annual["balerr"]) < 1e-3
+    no_snow = kernel.run_year(*args, fixes=ALL_FIXES & ~Fix.SNOWMELT_BASE)
+    assert no_snow.annual == kernel.run_year(
+        *args, fixes=ALL_FIXES ^ Fix.SNOWMELT_BASE).annual
+    assert no_snow.annual != default.annual
+
+
+def test_zeroed_options_run_every_fix(inp, kernel):
+    """A C caller that zeroes csk_options_t (revert = 0) gets the corrected
+    model, the same as the Python default."""
+    sim = sc.scenarios()["corn_pivot"]
+    args = (sim, inp.soils[622], inp.weather[2012], inp.initial)
+    assert ~(-1) & REVERT_ALL == 0                 # fixes=-1 sends revert = 0
+    assert kernel.run_year(*args, fixes=-1).annual == kernel.run_year(*args).annual
 
 
 def test_daily_values_add_up(inp, kernel):

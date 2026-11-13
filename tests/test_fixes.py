@@ -274,7 +274,7 @@ def test_et_accumulation(kernel, inp):
            for f in (Fix.NONE, Fix.ET_ACCUMULATION)}
     assert res[Fix.NONE].annual["etmax"] > res[Fix.ET_ACCUMULATION].annual["etmax"] + 0.01
     # Ordinary weather: no such days, identical results.
-    a = kernel.run_year(sim, inp.soils[622], w, inp.initial)
+    a = kernel.run_year(sim, inp.soils[622], w, inp.initial, fixes=Fix.NONE)
     b = kernel.run_year(sim, inp.soils[622], w, inp.initial, fixes=Fix.ET_ACCUMULATION)
     assert a.annual == b.annual
 
@@ -303,7 +303,7 @@ def test_perennial_roots(kernel, inp):
     sim = sc.scenarios()["alfalfa_spring_start"]
     w = inp.weather[2012]
     for code, rzmax in ((421, 0.7 * sim.rzmax), (832, sim.rzmax)):
-        off = kernel.run_year(sim, inp.soils[code], w, inp.initial)
+        off = kernel.run_year(sim, inp.soils[code], w, inp.initial, fixes=Fix.NONE)
         on = kernel.run_year(sim, inp.soils[code], w, inp.initial, fixes=Fix.PERENNIAL_ROOTS)
         days = season(off)
         assert off.daily["gdd"][days[0]] > 0
@@ -312,7 +312,7 @@ def test_perennial_roots(kernel, inp):
         assert on.annual["ts"] > off.annual["ts"]
     # A balance that starts on Jan 1 already gets RZMAX: no change.
     base = sc.scenarios()["alfalfa_pivot"]
-    a = kernel.run_year(base, inp.soils[622], w, inp.initial)
+    a = kernel.run_year(base, inp.soils[622], w, inp.initial, fixes=Fix.NONE)
     b = kernel.run_year(base, inp.soils[622], w, inp.initial, fixes=Fix.PERENNIAL_ROOTS)
     assert a.annual == b.annual
     # The same holds for turf, woodlands and wetlands; fallow, open water
@@ -320,7 +320,7 @@ def test_perennial_roots(kernel, inp):
     for crop, changed in ((14, True), (16, True), (17, True), (18, True), (19, True),
                           (15, False), (20, False), (22, False)):
         s = sc._sim("ALFIRR01", crop=crop, imbg=4, idbg=15)
-        a = kernel.run_year(s, inp.soils[832], w, inp.initial)
+        a = kernel.run_year(s, inp.soils[832], w, inp.initial, fixes=Fix.NONE)
         b = kernel.run_year(s, inp.soils[832], w, inp.initial, fixes=Fix.PERENNIAL_ROOTS)
         days = season(a)
         if changed:
@@ -329,7 +329,7 @@ def test_perennial_roots(kernel, inp):
             assert a.daily["rzd"] == b.daily["rzd"], crop
     # Row crops keep the growth equation.
     corn = sc.scenarios()["corn_pivot"]
-    a = kernel.run_year(corn, inp.soils[622], w, inp.initial)
+    a = kernel.run_year(corn, inp.soils[622], w, inp.initial, fixes=Fix.NONE)
     b = kernel.run_year(corn, inp.soils[622], w, inp.initial, fixes=Fix.PERENNIAL_ROOTS)
     assert a.daily["rzd"] == b.daily["rzd"]
 
@@ -339,14 +339,14 @@ def test_rzmin_cap(kernel, inp):
     original starts (and keeps) the roots at 16 in; the fix caps them at 14."""
     sim = sc.scenarios()["corn_shallow_roots"]
     w = inp.weather[2012]
-    off = kernel.run_year(sim, inp.soils[421], w, inp.initial)
+    off = kernel.run_year(sim, inp.soils[421], w, inp.initial, fixes=Fix.NONE)
     on = kernel.run_year(sim, inp.soils[421], w, inp.initial, fixes=Fix.RZMIN_CAP)
     days = season(off)
     assert max(off.daily["rzd"][d] for d in days) == pytest.approx(16.0)
     assert max(on.daily["rzd"][d] for d in days) == pytest.approx(14.0)
     # Deeper soils, where RZMIN is below the scaled RZMAX: no change.
     for code in (622, 832):
-        a = kernel.run_year(sim, inp.soils[code], w, inp.initial)
+        a = kernel.run_year(sim, inp.soils[code], w, inp.initial, fixes=Fix.NONE)
         b = kernel.run_year(sim, inp.soils[code], w, inp.initial, fixes=Fix.RZMIN_CAP)
         assert a.annual == b.annual
 
@@ -357,7 +357,7 @@ def test_leap_calendar(kernel, inp):
     the monthly totals follow the real calendar; 2011 is unchanged."""
     sim = sc.scenarios()["corn_pivot"]
     w = inp.weather[2012]
-    off = kernel.run_year(sim, inp.soils[622], w, inp.initial)
+    off = kernel.run_year(sim, inp.soils[622], w, inp.initial, fixes=Fix.NONE)
     on = kernel.run_year(sim, inp.soils[622], w, inp.initial, fixes=Fix.LEAP_CALENDAR)
     assert (off.annual["jdyend"], on.annual["jdyend"]) == (365, 366)
     assert on.annual["jdyplt"] == off.annual["jdyplt"] + 1     # May 5 is day 126 in 2012
@@ -370,7 +370,7 @@ def test_leap_calendar(kernel, inp):
             assert r.monthly["etrmon"][m] == pytest.approx(month, abs=1e-4), (leap, m)
     assert on.daily["etr"][365] > 0 and off.daily["etr"][365] == 0
     # Not a leap year: identical.
-    a = kernel.run_year(sim, inp.soils[622], inp.weather[2011], inp.initial)
+    a = kernel.run_year(sim, inp.soils[622], inp.weather[2011], inp.initial, fixes=Fix.NONE)
     b = kernel.run_year(sim, inp.soils[622], inp.weather[2011], inp.initial,
                         fixes=Fix.LEAP_CALENDAR)
     assert a.annual == b.annual and a.monthly == b.monthly
@@ -393,7 +393,7 @@ def test_tailwater_furrow(kernel, inp):
     # Furrow (IRRTYP 4) keeps its tailwater.
     furrow = sc._sim("CRNIRR01", irrtyp=4, irrsch=3, jfirst=150, jstopi=0, jgoi=0,
                      jdfreq=10, ddepth=2.0, ereuse=[0.3] * 5, prunof=[0.25] * 5)
-    a = kernel.run_year(furrow, inp.soils[622], w, inp.initial)
+    a = kernel.run_year(furrow, inp.soils[622], w, inp.initial, fixes=Fix.NONE)
     b = kernel.run_year(furrow, inp.soils[622], w, inp.initial, fixes=Fix.TAILWATER_FURROW)
     assert a.annual == b.annual
 
@@ -405,14 +405,14 @@ def test_forage_cutoff(kernel, inp):
     sim = sc.scenarios()["range_rotation"]
     w = inp.weather[2012]
     shut = range(sim.jstopi, sim.jgoi - 1)          # days jstopi+1 .. jgoi-1, 0-based
-    off = kernel.run_year(sim, inp.soils[622], w, inp.initial)
+    off = kernel.run_year(sim, inp.soils[622], w, inp.initial, fixes=Fix.NONE)
     on = kernel.run_year(sim, inp.soils[622], w, inp.initial, fixes=Fix.FORAGE_CUTOFF)
     assert any(off.daily["grirr"][d] > 0 for d in shut)
     assert not any(on.daily["grirr"][d] > 0 for d in shut)
     assert not any(on.daily["grirr"][d] > 0 for d in range(304, 366))
     # Irrigated pasture already has the shut-off; the fix changes nothing.
     past = sc.scenarios()["pasture_rotation"]
-    a = kernel.run_year(past, inp.soils[622], w, inp.initial)
+    a = kernel.run_year(past, inp.soils[622], w, inp.initial, fixes=Fix.NONE)
     b = kernel.run_year(past, inp.soils[622], w, inp.initial, fixes=Fix.FORAGE_CUTOFF)
     assert a.annual == b.annual
     assert not any(a.daily["grirr"][d] > 0 for d in range(past.jstopi, past.jgoi - 1))

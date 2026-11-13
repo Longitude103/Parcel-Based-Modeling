@@ -7,7 +7,7 @@ tools/make_engine.py, whose output tests/test_parity.py checks character
 for character against the original program. The annual results and the
 end-of-year state are saved at full precision in tests/golden/original.csv.
 
-The kernel with no fixes must reproduce these (tests/test_kernel.py).
+The kernel with every fix reverted (Fix.ORIGINAL) must reproduce these (tests/test_kernel.py).
 Regenerate only if the reference engine itself changes:
 
     python tools/make_golden.py

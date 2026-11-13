@@ -127,7 +127,7 @@ def fix_section(fix: Fix, cmp: dict, base: dict, other: dict, total: int) -> lis
     for key, label in METRICS + COUNTS + [("infmon", "Infiltration (INFMON)"),
                                           ("yield", "Yield"),
                                           ("yldratio", "Yield ratio")]:
-        xs = [cmp["d"][key][r] for r in changed]
+        xs = [cmp["d"][key][r] for r in sorted(changed)]  # sorted: ties pick the same run
         if all((not math.isnan(x)) and abs(x) <= TOL for x in xs):
             continue
         digits = 0 if key in ("irigno", "jfirst") else 3 if key == "yldratio" else 2

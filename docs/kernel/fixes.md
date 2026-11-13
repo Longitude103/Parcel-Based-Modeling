@@ -1,9 +1,15 @@
 # Bug fixes in the CropSim kernel
 
-Each fix is a bit in `options.fixes` (`csk_options_t` in C, `cropsim.Fix`
-in Python). With `fixes = 0` the kernel reproduces the original v8.0
-program exactly; any fix can be switched on alone or with others, so every
-change can be measured against the original.
+Every fix is on by default. Each fix has a bit (`cropsim.Fix` in Python,
+`CSK_FIX_*` in C), and any of them can be turned off to bring back the
+original behaviour, so every change can be measured against the original:
+
+| | Python (`Kernel.run_year`) | C (`csk_options_t`) |
+| --- | --- | --- |
+| All fixes (default) | no `fixes` argument, or `fixes=ALL_FIXES` | `revert = 0` (a zeroed struct) |
+| Original v8.0, exactly | `fixes=Fix.ORIGINAL` (same as `Fix.NONE`) | `revert = CSK_REVERT_ALL` |
+| Revert one fix | `fixes=ALL_FIXES & ~Fix.LEAP_CALENDAR` | `revert = CSK_FIX_LEAP_CALENDAR` |
+| Only some fixes | `fixes=Fix.KC_GDD_LAG \| Fix.SNOWMELT_BASE` | `revert = CSK_REVERT_ALL & ~(...)` |
 
 Each fix has a test in `tests/test_fixes.py` that shows the original
 behaviour with the fix off and the corrected behaviour with it on. How

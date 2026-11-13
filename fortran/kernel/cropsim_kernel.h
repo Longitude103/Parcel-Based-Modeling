@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-#define CSK_API_VERSION 1
+#define CSK_API_VERSION 2
 
 /* Status codes (1-4 are the original program's STOP checks). */
 #define CSK_OK              0
@@ -28,8 +28,12 @@ extern "C" {
 #define CSK_ERR_NEG_RUNOFF  4
 #define CSK_ERR_BAD_INPUT  11
 
-/* Bug-fix switches for csk_options_t.fixes (see docs/kernel/fixes.md). */
+/* Bug-fix switches (see docs/kernel/fixes.md). Every fix is on by default:
+   a zeroed csk_options_t runs the corrected model. Set a bit in
+   csk_options_t.revert to turn that fix off, or set revert = CSK_REVERT_ALL
+   for the original v8.0 results. */
 #define CSK_FIX_NONE 0
+#define CSK_REVERT_ALL 0x7FFFFFFF
 #define CSK_FIX_KC_GDD_LAG                    1  /* Crop coefficient uses the day's GDD, not the previous day's (original READWEAT 3693-3697). */
 #define CSK_FIX_SNOWMELT_BASE                 2  /* Snow melts above params%smtmp (default 32 F) instead of an unset SMTMP of 0 F (original SNOWMELT 3994-3999). */
 #define CSK_FIX_IRRIGATION_COUNT              4  /* Irrigation count and first irrigation date count real irrigations (original DEPLT 2123, IRRIGA 2869-2925). */
@@ -115,7 +119,7 @@ typedef struct {
 } csk_state_t;
 
 typedef struct {
-    int32_t fixes;          /* CSK_FIX_* bits */
+    int32_t revert;         /* CSK_FIX_* bits to turn off; 0 = all fixes on */
     int32_t livecond;       /* original LIVECOND rule (same SIM, earlier year) */
     int32_t legacy_round;   /* round the returned state like INITIAL.DAT */
     int32_t reserved;

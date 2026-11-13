@@ -182,7 +182,7 @@ Changed 648 of 648 runs, in 36 scenario(s): `alfalfa_pivot`, `alfalfa_rotation`,
 | Seasonal ET for yield (ETMAX) | +0.01 | +1.74 | |
 | Seasonal ET for yield (ETYLD) | 0 | -2.70 | |
 | Irrigations | 0 | -2 | |
-| First irr. day | 0 | -95 | |
+| First irr. day | 0 | +95 | |
 | Yield | -0.30 | -99.09 | |
 | Yield ratio | -0.001 | -0.495 | |
 

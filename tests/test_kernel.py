@@ -66,7 +66,11 @@ def test_kernel_equals_reference(inp, kernel, engine, name, soil):
             assert all(map(same, v, b.monthly[k])), f"{where}: monthly {k}"
         for k, v in a.weekly.items():
             assert all(map(same, v, b.weekly[k])), f"{where}: weekly {k}"
-        assert a.state == b.state, where
+        sa, sb = vars(a.state), vars(b.state)
+        for k, v in sa.items():
+            vals = v if isinstance(v, list) else [v]
+            other = sb[k] if isinstance(sb[k], list) else [sb[k]]
+            assert all(map(same, vals, other)), f"{where}: state {k}"
 
 
 def _golden_rows():

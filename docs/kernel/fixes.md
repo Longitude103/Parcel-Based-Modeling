@@ -30,6 +30,8 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 13 | 8192 | `INFILTRATION_OUTPUT` | Monthly infiltration output (INFMON) only |
 | 14 | 16384 | `ET_ACCUMULATION` | Seasonal ET for the yield model (ETMAX, ETYLD) on very low-ET days only |
 | 15 | 32768 | `FALLOW_CROP` | Summer fallow: end-of-year crop, live-crop flag and yield (then next year's wheat logic) |
+| 16 | 65536 | `PERENNIAL_ROOTS` | Perennial covers (crops 10-14, 16-19): root depth, so T, ET, DP; removes a NaN in the original |
+| 17 | 131072 | `RZMIN_CAP` | Shallow soils where RZMIN exceeds the scaled RZMAX: root depth, so T, NIR, DP |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -321,3 +323,51 @@ this does not show in the reports.
 wheat with a live crop and the yield is NaN; on, the crop
 stays 15 with no live crop and the yield is `YMAX`, while the year's water
 balance is the same.
+
+## PERENNIAL_ROOTS: perennial forage roots at full depth
+
+**Original** (ROOTZN 1742, SIM reader 831). Root depth grows from `RZMIN`
+at `GDDROOT` to `RZMAX` at `GDDFLO`. Only crops 1-9 read `GDDFLO` from
+the SIM file. For crops 10 and up it is 0 in the kernel (in the original
+program it keeps whatever the previous SIM file set, so results depend on
+run order). With `GDDFLO = 0` the equation gives `RZMAX` only on a day
+with no growing degree days yet, and falls toward `RZMIN` as they accrue.
+A water balance that starts on Jan 1 gets `RZMAX` on day 1 and keeps it,
+but one that starts after planting (GDD already above 0) keeps the roots
+at `RZMIN` all year. On the test parcels that also leads to a 0/0 in the
+uptake loop, and every layer's water turns NaN from the second day.
+
+**Fix.** Decided by Heath (2026-11-13): perennial crops are already
+established, so they use the soil-scaled `RZMAX` every day and skip the
+growth equation. The covers counted as perennial:
+
+| Code | Cover | Perennial roots |
+| --- | --- | --- |
+| 10-13 | Alfalfa, irrigated hay, irrigated pasture, native pasture/range | Yes |
+| 14 | Urban turf | Yes |
+| 15 | Summer fallow | No (no crop) |
+| 16, 17 | Riparian and non-riparian woodlands | Yes |
+| 18, 19 | Wetlands: cattails and bulrush, reed swamp | Yes |
+| 20, 21 | Open water, shallow and deep | No (ET comes from the water) |
+| 22 | Residential, roads, farmsteads | No (mixed cover) |
+
+**Test.** `test_perennial_roots`: alfalfa whose balance starts on Apr 15
+(`alfalfa_spring_start`). Off, the roots stay at `RZMIN` (4 in) all
+season; on, they stay at `RZMAX` (33.6 in on soil 421, 48 in on 832) and
+transpiration rises. A Jan 1 start and row crops are unchanged.
+
+## RZMIN_CAP: starting root depth deeper than the soil allows
+
+**Original** (849-856). For soils in the 300-600 series `RZMAX` and
+`RZMGMT` are scaled down (to as little as 60%), but `RZMIN` is not. If
+`RZMIN` is larger than the scaled `RZMAX`, the root depth equation clips
+to `RZMAX` and then raises it back to `RZMIN`, so the roots start, and
+stay, deeper than the soil's limit.
+
+**Fix.** Decided by Heath (2026-11-13): cap `RZMIN` at the soil-scaled
+`RZMAX`.
+
+**Test.** `test_rzmin_cap`: irrigated corn with `RZMIN` 16 in and `RZMAX`
+20 in (`corn_shallow_roots`). On soil 421 `RZMAX` scales to 14 in; off,
+the roots sit at 16 in, on, at 14 in. Soils 622 and 832, where `RZMIN` is
+below the scaled `RZMAX`, are unchanged.

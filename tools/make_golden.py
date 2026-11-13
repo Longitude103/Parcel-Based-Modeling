@@ -1,6 +1,6 @@
 """Write the golden outputs of the original model for the test parcels.
 
-Runs every scenario in tests/scenarios.py (34 crop/irrigation setups x 3
+Runs every scenario in tests/scenarios.py (37 crop/irrigation setups x 3
 soils x 6 years, each soil carrying its own state) through the reference
 engine: the frozen v8.0 source with only the library edits listed in
 tools/make_engine.py, whose output tests/test_parity.py checks character

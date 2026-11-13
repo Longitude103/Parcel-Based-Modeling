@@ -1,7 +1,7 @@
 """Measure what each bug fix changes, and by how much, on the test parcels.
 
-Runs every scenario in tests/scenarios.py (34 setups x 3 soils x 6 years,
-630 runs, each soil carrying its own state) through the kernel with no
+Runs every scenario in tests/scenarios.py (37 setups x 3 soils x 6 years,
+666 runs, each soil carrying its own state) through the kernel with no
 fixes, with each fix alone, and with all fixes, and writes the differences
 to docs/kernel/fix-impact.md.
 
@@ -72,7 +72,7 @@ def diff(a: float, b: float) -> float:
 def fmt(x: float, digits: int = 2) -> str:
     if math.isnan(x):
         return "NaN"
-    if abs(x) < 0.5 * 10 ** -digits:
+    if abs(x) < 0.5 * 10 ** -digits or round(x, digits) == 0:
         return "0"
     return f"{x:+.{digits}f}"
 
@@ -259,6 +259,13 @@ def main() -> None:
         "so it under-reports fall runoff). The RESIDUE_CN effect grows with residue "
         "amount and with rain after maturity, both of which are large in the fixture "
         "data; check it on real parcels.",
+        "* **Root depth.** PERENNIAL_ROOTS changes only perennial covers whose water "
+        "balance starts after planting (`alfalfa_spring_start`); with a Jan 1 start the "
+        "original already gives RZMAX. Without the fix those runs go NaN from the second "
+        "day (all soil water), so the runoff and evaporation \"changes\" in its table "
+        "are against meaningless numbers; with the fix they give a season water budget "
+        "close to the Jan 1 alfalfa (`alfalfa_pivot`), shortened by the later start. RZMIN_CAP changes only `corn_shallow_roots` on soil 421, the one case "
+        "where RZMIN is deeper than the soil-scaled RZMAX.",
         "* **SNOWMELT_BASE** touches every run because snow melted at 0 F instead of 32 F, "
         "so the original melted snow on most winter days.",
         "",

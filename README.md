@@ -21,7 +21,7 @@ each known bug fixable by its own switch (`docs/kernel/`). The Python package
 | `docs/kernel/` | Kernel design, bug-fix switches and how much each fix changes results. |
 | `src/cropsim/` | Python package: ctypes binding, input/result objects, readers for the old input files. |
 | `tests/` | Parity test against the original program, kernel golden and bug-fix tests. |
-| `tests/golden/original.csv` | Original model results for 630 test-parcel runs (`tools/make_golden.py`). |
+| `tests/golden/original.csv` | Original model results for 666 test-parcel runs (`tools/make_golden.py`). |
 
 ## Using it
 

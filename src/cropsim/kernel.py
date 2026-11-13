@@ -38,6 +38,8 @@ class Fix(enum.IntFlag):
     """Wetland, riparian and open-water ET is taken from the soil water, with any shortfall reported as supply (original DEPLT 2347-2357)."""
     DRAINAGE_SPREAD = 256
     """Water held back from drainage is spread over exactly the layers that receive it (original DEPLT 2386-2432)."""
+    KNOWN_DATE_RAIN = 512
+    """Known-date irrigation runs (IRRTYP 2) keep runoff and snow out of effective rain (original DEPLT 2032)."""
 
 ALL_FIXES = Fix(0)
 for _f in Fix:

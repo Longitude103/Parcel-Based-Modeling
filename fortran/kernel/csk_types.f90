@@ -65,6 +65,9 @@ module csk_types
   ! Water held back from drainage is spread over exactly the layers
   ! that receive it (original DEPLT 2386-2432).
   integer, parameter, public :: FIX_DRAINAGE_SPREAD = 256
+  ! Known-date irrigation runs (IRRTYP 2) keep runoff and snow out of
+  ! effective rain (original DEPLT 2032).
+  integer, parameter, public :: FIX_KNOWN_DATE_RAIN = 512
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).

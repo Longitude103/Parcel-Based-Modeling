@@ -175,3 +175,16 @@ def test_drainage_spread(kernel, inp):
     on = chain(kernel, inp, "cattail", soil=832, fixes=base | Fix.DRAINAGE_SPREAD)
     assert max(r.annual["balerr"] for r in off) > 0.5      # water created
     assert max(abs(r.annual["balerr"]) for r in on) < 1e-3
+
+
+def test_known_date_rain(kernel, inp):
+    base = Fix.TRANSPIRATION_LIMIT | Fix.DRAINAGE_SPREAD
+    off = chain(kernel, inp, "corn_known_dates", fixes=base)
+    on = chain(kernel, inp, "corn_known_dates", fixes=base | Fix.KNOWN_DATE_RAIN)
+    for r in off:
+        assert r.annual["eprecips"] == pytest.approx(r.annual["precips"])
+        assert r.annual["totrof"] > 0           # runoff reported as well
+        assert r.annual["balerr"] > 0.1         # so water is counted twice
+    for r in on:
+        assert r.annual["eprecips"] < r.annual["precips"]
+        assert abs(r.annual["balerr"]) < 1e-3

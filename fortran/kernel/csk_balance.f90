@@ -243,7 +243,10 @@ contains
         if ((w%eprecip > w%rain) .and. (w%iterrc == 0)) then
           if (w%status == 0) w%status = CSK_ERR_EFF_PRECIP
         end if
-        if (w%irrtyp == 2) w%eprecip = w%precip(jday)
+        ! The original counted all precipitation as effective in known-
+        ! date runs, while still reporting the runoff and storing snow.
+        if (w%irrtyp == 2 .and. .not. fix_on(w, FIX_KNOWN_DATE_RAIN)) &
+          w%eprecip = w%precip(jday)
         w%dinf = w%eprecip
         jdywet = jday
         call infiltrate(w)

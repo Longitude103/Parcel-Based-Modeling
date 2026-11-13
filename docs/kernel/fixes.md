@@ -23,6 +23,7 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 6 | 64 | `TRANSPIRATION_LIMIT` | Transpiration and ET on water-short days; closes the water balance |
 | 7 | 128 | `WETLAND_BALANCE` | Wetland, riparian woodland and open water: DP and a new supply term (WETSUPS) |
 | 8 | 256 | `DRAINAGE_SPREAD` | DP and soil water where layers sit at field capacity (mostly wetlands); closes the water balance |
+| 9 | 512 | `KNOWN_DATE_RAIN` | Known-date irrigation runs (IRRTYP 2): effective rain, so DP and ET |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -195,3 +196,22 @@ yearly water balance error is over 0.5 in with this fix off and under
 0.001 in with it on.
 
 The earlier review noted this as possible but unmeasured.
+
+## KNOWN_DATE_RAIN: all rain counted as effective in known-date runs
+
+**Original** (DEPLT 2032). For runs with known irrigation dates
+(`IRRTYP 2`), effective precipitation is overwritten with the day's
+total precipitation after runoff and snow have been worked out. Runoff is
+still reported and snow is still stored, so that water is counted twice:
+once as runoff or snow, and again as infiltration.
+
+**Fix.** Keep the effective precipitation from the runoff calculation, as
+for every other irrigation type.
+
+**Test.** `test_known_date_rain`: off, effective rain equals total rain
+while runoff is also reported and the yearly water balance is off by more
+than 0.1 in; on, effective rain is less than total and the balance closes.
+
+This matters for the two-pass irrigation design, whose applied-water pass
+uses `IRRTYP 2`. It was suspected in the technical reference and is now
+confirmed.

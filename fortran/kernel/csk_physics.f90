@@ -156,6 +156,7 @@ contains
     ! (and on the first day, the last daily GDD increment above).
     w%gdd = gdd
     do jday = w%jdystr, w%jdystp
+      if (fix_on(w, FIX_KC_GDD_LAG)) w%gdd = w%gdds(jday)
       call crop_coefficient(w, jday)
       w%gdd = w%gdds(jday)
       w%cropkc(jday) = w%kc

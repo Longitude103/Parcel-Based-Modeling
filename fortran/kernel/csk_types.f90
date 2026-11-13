@@ -38,6 +38,9 @@ module csk_types
 
   ! ---- Bug-fix switches (bits of options%fixes) ----
   ! Bits are added one per fix; see docs/kernel/fixes.md.
+  ! Crop coefficient uses the day's GDD, not the previous day's
+  ! (original READWEAT 3693-3697).
+  integer, parameter, public :: FIX_KC_GDD_LAG = 1
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).

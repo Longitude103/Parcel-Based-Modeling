@@ -20,6 +20,8 @@ class Fix(enum.IntFlag):
 
     NONE = 0
 
+    KC_GDD_LAG = 1
+    """Crop coefficient uses the day's GDD, not the previous day's (original READWEAT 3693-3697)."""
 
 ALL_FIXES = Fix(0)
 for _f in Fix:

@@ -30,6 +30,7 @@ extern "C" {
 
 /* Bug-fix switches for csk_options_t.fixes (see docs/kernel/fixes.md). */
 #define CSK_FIX_NONE 0
+#define CSK_FIX_KC_GDD_LAG                    1  /* Crop coefficient uses the day's GDD, not the previous day's (original READWEAT 3693-3697). */
 
 /* BLOCK.DAT and TILLAGE.DAT. */
 typedef struct {

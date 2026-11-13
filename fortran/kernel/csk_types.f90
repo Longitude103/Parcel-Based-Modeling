@@ -74,6 +74,9 @@ module csk_types
   ! Demand irrigation is sized from today's management-zone depletion,
   ! not yesterday's whole-profile depletion (original IRRIGA 2804, 2892, 2953).
   integer, parameter, public :: FIX_IRRIGATION_DEPTH = 2048
+  ! The drainage clock restarts only when water soaks in, not on every
+  ! irrigation check or snow day (original DEPLT 2018-2034, 2146).
+  integer, parameter, public :: FIX_DRAINAGE_CLOCK = 4096
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).

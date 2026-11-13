@@ -229,3 +229,25 @@ def test_irrigation_depth(kernel, inp):
     per = [sum(r.annual["snirr"] for r in rs) / sum(r.annual["irigno"] for r in rs)
            for rs in (off, on)]
     assert per[1] < per[0]
+
+
+def test_drainage_clock(kernel, inp):
+    """With the clock restarted only by real wetting, all excess water has
+    drained within DRNDAY days of the last wetting. In the original the
+    clock restarted on every irrigation check and snow day, so drainage
+    went on longer at the slow first-day rate."""
+    soil = inp.soils[622]
+    late = {}
+    for fixes in (Fix.NONE, Fix.DRAINAGE_CLOCK):
+        n = 0
+        for r in chain(kernel, inp, "corn_pivot", fixes=fixes):
+            d_ = r.daily
+            last_wet = -100
+            for d in season(r):
+                if d_["eprecip"][d] > 0 or d_["irrinf"][d] > 0:
+                    last_wet = d
+                if d_["drain"][d] > 0 and d - last_wet + 1 > soil.drnday:
+                    n += 1
+        late[fixes] = n
+    assert late[Fix.NONE] > 0
+    assert late[Fix.DRAINAGE_CLOCK] == 0

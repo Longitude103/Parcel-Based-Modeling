@@ -26,6 +26,7 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 9 | 512 | `KNOWN_DATE_RAIN` | Known-date irrigation runs (IRRTYP 2): effective rain, so DP and ET |
 | 10 | 1024 | `RESIDUE_CN` | Row crops after maturity: runoff, so infiltration and DP |
 | 11 | 2048 | `IRRIGATION_DEPTH` | Demand-scheduled irrigation depth, so NIR, DP and ET |
+| 12 | 4096 | `DRAINAGE_CLOCK` | Timing of deep percolation (faster); small change in annual DP and ET |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -253,3 +254,21 @@ is smaller with the fix on.
 
 **Check with NeDNR.** This may be intended (refill the whole profile). The
 earlier review flagged it as "check intent"; the switch lets both be run.
+
+## DRAINAGE_CLOCK: drainage clock restarted with no water added
+
+**Original** (DEPLT 2018-2034, 2146). Drainage of water above field
+capacity speeds up with the days since the profile was last wetted
+(`DFRACT = ((JDAY - JDYWET + 1)/DRNDAY)^DRNCOE`). `JDYWET` is reset on
+every day with snow on the ground or rain (even if it all ran off or
+went into the snowpack) and on every day irrigation is considered, even
+when none is applied. For irrigated crops in season that is every day, so
+drainage stays at its slow first-day rate.
+
+**Fix.** Restart the clock only on days when water actually soaks in.
+
+**Test.** `test_drainage_clock`: irrigated corn; with the fix on, no
+drainage happens more than `DRNDAY` days after the last wetting (the
+excess is gone by then, as the formula intends); with it off, it does.
+
+The earlier review measured this at most 0.01 in/month on its inputs.

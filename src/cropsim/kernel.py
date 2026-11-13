@@ -44,6 +44,8 @@ class Fix(enum.IntFlag):
     """After maturity the residue factor is applied to the curve number once, not twice (original EFPRECIP 1641)."""
     IRRIGATION_DEPTH = 2048
     """Demand irrigation is sized from today's management-zone depletion, not yesterday's whole-profile depletion (original IRRIGA 2804, 2892, 2953)."""
+    DRAINAGE_CLOCK = 4096
+    """The drainage clock restarts only when water soaks in, not on every irrigation check or snow day (original DEPLT 2018-2034, 2146)."""
 
 ALL_FIXES = Fix(0)
 for _f in Fix:

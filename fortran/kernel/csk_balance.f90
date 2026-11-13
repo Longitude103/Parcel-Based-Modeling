@@ -256,7 +256,9 @@ contains
         if (w%irrtyp == 2 .and. .not. fix_on(w, FIX_KNOWN_DATE_RAIN)) &
           w%eprecip = w%precip(jday)
         w%dinf = w%eprecip
-        jdywet = jday
+        ! The original restarted the drainage clock here even when no
+        ! water soaked in (snow on the ground, or all of it ran off).
+        if (w%dinf > 0. .or. .not. fix_on(w, FIX_DRAINAGE_CLOCK)) jdywet = jday
         call infiltrate(w)
       end if
 
@@ -318,7 +320,8 @@ contains
         w%sgrirr = w%sgrirr + w%groirr
         w%snirr = w%snirr + w%netirr
         w%irrinf = w%dinf
-        jdywet = jday
+        ! Likewise on every day irrigation was checked, irrigated or not.
+        if (w%dinf > 0. .or. .not. fix_on(w, FIX_DRAINAGE_CLOCK)) jdywet = jday
         call infiltrate(w)
       end block irrigation
 

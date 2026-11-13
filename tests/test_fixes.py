@@ -317,6 +317,18 @@ def test_perennial_roots(kernel, inp):
     a = kernel.run_year(base, inp.soils[622], w, inp.initial)
     b = kernel.run_year(base, inp.soils[622], w, inp.initial, fixes=Fix.PERENNIAL_ROOTS)
     assert a.annual == b.annual
+    # The same holds for turf, woodlands and wetlands; fallow, open water
+    # and farmsteads keep the original equation.
+    for crop, changed in ((14, True), (16, True), (17, True), (18, True), (19, True),
+                          (15, False), (20, False), (22, False)):
+        s = sc._sim("ALFIRR01", crop=crop, imbg=4, idbg=15)
+        a = kernel.run_year(s, inp.soils[832], w, inp.initial)
+        b = kernel.run_year(s, inp.soils[832], w, inp.initial, fixes=Fix.PERENNIAL_ROOTS)
+        days = season(a)
+        if changed:
+            assert all(b.daily["rzd"][d] == pytest.approx(s.rzmax) for d in days), crop
+        else:
+            assert a.daily["rzd"] == b.daily["rzd"], crop
     # Row crops keep the growth equation.
     corn = sc.scenarios()["corn_pivot"]
     a = kernel.run_year(corn, inp.soils[622], w, inp.initial)

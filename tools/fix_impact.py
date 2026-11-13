@@ -259,7 +259,7 @@ def main() -> None:
         "so it under-reports fall runoff). The RESIDUE_CN effect grows with residue "
         "amount and with rain after maturity, both of which are large in the fixture "
         "data; check it on real parcels.",
-        "* **Root depth.** PERENNIAL_ROOTS changes only perennial forage whose water "
+        "* **Root depth.** PERENNIAL_ROOTS changes only perennial covers whose water "
         "balance starts after planting (`alfalfa_spring_start`); with a Jan 1 start the "
         "original already gives RZMAX. Without the fix those runs go NaN from the second "
         "day (all soil water), so the runoff and evaporation \"changes\" in its table "

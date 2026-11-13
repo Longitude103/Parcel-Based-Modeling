@@ -601,8 +601,8 @@ contains
     real :: remain, topdep, botdep, fdepth, zu, zl
     integer :: i
 
-    if (fix_on(w, FIX_PERENNIAL_ROOTS) .and. w%crop >= 10 .and. w%crop <= 13) then
-      ! Established perennial forage: full root depth all year.
+    if (fix_on(w, FIX_PERENNIAL_ROOTS) .and. perennial(w%crop)) then
+      ! Established perennial cover: full root depth all year.
       w%rzd = w%rzmax
     else
       ! Original: roots grow from RZMIN at GDDROOT to RZMAX at GDDFLO.
@@ -666,6 +666,13 @@ contains
     end function rdist
 
   end subroutine root_zone
+
+  ! Established perennial covers for PERENNIAL_ROOTS: alfalfa, hay,
+  ! pastures (10-13), urban turf (14), woodlands (16-17), wetlands (18-19).
+  pure logical function perennial(crop)
+    integer, intent(in) :: crop
+    perennial = (crop >= 10 .and. crop <= 14) .or. (crop >= 16 .and. crop <= 19)
+  end function perennial
 
   !---------------------------------------------------------------------
   !  Depletion below field capacity in the irrigation management zone

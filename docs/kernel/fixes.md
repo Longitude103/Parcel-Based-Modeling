@@ -30,7 +30,7 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 13 | 8192 | `INFILTRATION_OUTPUT` | Monthly infiltration output (INFMON) only |
 | 14 | 16384 | `ET_ACCUMULATION` | Seasonal ET for the yield model (ETMAX, ETYLD) on very low-ET days only |
 | 15 | 32768 | `FALLOW_CROP` | Summer fallow: end-of-year crop, live-crop flag and yield (then next year's wheat logic) |
-| 16 | 65536 | `PERENNIAL_ROOTS` | Alfalfa, hay and pastures (crops 10-13): root depth, so T, ET, DP; removes a NaN in the original |
+| 16 | 65536 | `PERENNIAL_ROOTS` | Perennial covers (crops 10-14, 16-19): root depth, so T, ET, DP; removes a NaN in the original |
 | 17 | 131072 | `RZMIN_CAP` | Shallow soils where RZMIN exceeds the scaled RZMAX: root depth, so T, NIR, DP |
 
 ## KC_GDD_LAG: crop coefficient one day behind
@@ -338,23 +338,18 @@ at `RZMIN` all year. On the test parcels that also leads to a 0/0 in the
 uptake loop, and every layer's water turns NaN from the second day.
 
 **Fix.** Decided by Heath (2026-11-13): perennial crops are already
-established, so crops 10-13 (alfalfa, irrigated hay, irrigated pasture,
-native pasture/range) use the soil-scaled `RZMAX` every day and skip the
-growth equation.
+established, so they use the soil-scaled `RZMAX` every day and skip the
+growth equation. The covers counted as perennial:
 
-Crops 14 and up are left on the original equation until decided. On the
-test parcels they all start on Jan 1, so they get `RZMAX` anyway:
-
-| Code | Cover | Perennial? |
+| Code | Cover | Perennial roots |
 | --- | --- | --- |
-| 14 | Urban turf | Yes, established grass |
-| 15 | Summer fallow | No crop |
-| 16 | Riparian woodlands | Yes |
-| 17 | Non-riparian woodlands | Yes |
-| 18 | Wetlands, cattails and bulrush | Yes (killed back by frost each year) |
-| 19 | Wetlands, reed swamp | Yes |
-| 20, 21 | Open water, shallow and deep | No roots (ET is taken from the water) |
-| 22 | Residential, roads, farmsteads | Mixed |
+| 10-13 | Alfalfa, irrigated hay, irrigated pasture, native pasture/range | Yes |
+| 14 | Urban turf | Yes |
+| 15 | Summer fallow | No (no crop) |
+| 16, 17 | Riparian and non-riparian woodlands | Yes |
+| 18, 19 | Wetlands: cattails and bulrush, reed swamp | Yes |
+| 20, 21 | Open water, shallow and deep | No (ET comes from the water) |
+| 22 | Residential, roads, farmsteads | No (mixed cover) |
 
 **Test.** `test_perennial_roots`: alfalfa whose balance starts on Apr 15
 (`alfalfa_spring_start`). Off, the roots stay at `RZMIN` (4 in) all

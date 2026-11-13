@@ -108,9 +108,10 @@ irrigation and runoff on the test parcels. The original is always one
 
 ## Decided
 
-* `GDDFLO` unset for crops 10 and up: perennial forage (crops 10-13)
-  uses `RZMAX` all year (`PERENNIAL_ROOTS`). Whether crops 14-22 should
-  too is still open; see `fixes.md`.
+* `GDDFLO` unset for crops 10 and up: established perennial covers
+  (alfalfa, hay, pastures, turf, woodlands, wetlands: crops 10-14 and
+  16-19) use `RZMAX` all year (`PERENNIAL_ROOTS`). Fallow (15), open water
+  (20-21) and farmsteads (22) keep the original equation.
 * `RZMIN` not scaled by soil: capped at the scaled `RZMAX` (`RZMIN_CAP`).
 
 ## Not fixed yet (need a decision)

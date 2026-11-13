@@ -1,0 +1,11 @@
+[
+ "The CropSim v8.0 source <code>fortran/original/CROPSIM_V8.0.F90</code> was not changed. A copy was built with the same three parity edits used by the repo's test harness (run-folder path, path separators, resetting three module settings between soils) plus <code>WRITE</code>-only trace calls.",
+ "The traced build's yearly, monthly, precipitation and initial-condition outputs are byte-identical to an untraced build of the same copy, so tracing did not change any result.",
+ "Every number on this page is a value the Fortran computed and wrote to the trace. The page does no arithmetic of its own, apart from rounding for display.",
+ "105 of 105 values cross-checked against the model's own daily printout for this week (debug print level 3) agree.",
+ "Weather: Scottsbluff station files for 2017 (spin-up) and 2018 (shown). Reference ET in these files is Hargreaves (ETRHG), not Penman-Monteith. The week is 10\u201316 July 2018 (days 191\u2013197).",
+ "Location is western rather than central Nebraska because the central Nebraska weather files were not reachable (still archived in OneDrive). Heath approved using the western set.",
+ "Soil is a representative profile, not a mapped SSURGO component: 10 one-foot layers, field capacity 0.28\u20130.26 and wilting point 0.11\u20130.09 in/in, hydrologic group B, curve number table 67/78/85/89.",
+ "Crop and irrigation settings: corn with demand (management allowed depletion) scheduling, a 1.10 in gross application at 0.85 efficiency, system capacity of 0.30 in/day running 90% of the time, and a 0.25 in rain allowance. Block and tillage files are the repo test fixtures.",
+ "Initial condition: profile at 85% of available water on 1 January 2017, then one full year of spin-up. The dry 2017 left the deep profile well below field capacity, which is why no deep percolation occurs in 2018."
+]

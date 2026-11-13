@@ -1,0 +1,5 @@
+ref.f90
+traced.f90
+cropsim_*
+run_*/
+out/

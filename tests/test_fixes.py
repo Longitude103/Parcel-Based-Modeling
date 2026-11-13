@@ -164,3 +164,14 @@ def test_wetland_balance(kernel, inp, name):
     assert sum(abs(r.annual["balerr"]) for r in on) < sum(abs(r.annual["balerr"]) for r in off)
     # ET itself is unchanged: it is still KC x ETR.
     assert [r.annual["ets"] for r in on] == [r.annual["ets"] for r in off]
+
+
+def test_drainage_spread(kernel, inp):
+    """Layers exactly at field capacity got a share of the held-back water
+    without being counted, creating water. Shows most on wetlands, whose
+    layers sit at field capacity."""
+    base = Fix.WETLAND_BALANCE
+    off = chain(kernel, inp, "cattail", soil=832, fixes=base)
+    on = chain(kernel, inp, "cattail", soil=832, fixes=base | Fix.DRAINAGE_SPREAD)
+    assert max(r.annual["balerr"] for r in off) > 0.5      # water created
+    assert max(abs(r.annual["balerr"]) for r in on) < 1e-3

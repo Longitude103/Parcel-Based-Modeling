@@ -427,6 +427,15 @@ contains
         w%theta(i) = w%theta(i) + thetup
         if (w%theta(i) >= w%fieldc(i)) distd = distd + w%depth(i)
       end do
+      ! The original left out of DISTD any layer already exactly at field
+      ! capacity before the first wet layer, yet still added DIST to it,
+      ! creating water.
+      if (fix_on(w, FIX_DRAINAGE_SPREAD)) then
+        distd = 0.0
+        do i = 1, w%layers
+          if (w%theta(i) >= w%fieldc(i)) distd = distd + w%depth(i)
+        end do
+      end if
 
       ! ---- Drainage below the profile ----
       drain = 0.0

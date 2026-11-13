@@ -62,6 +62,9 @@ module csk_types
   ! Wetland, riparian and open-water ET is taken from the soil water,
   ! with any shortfall reported as supply (original DEPLT 2347-2357).
   integer, parameter, public :: FIX_WETLAND_BALANCE = 128
+  ! Water held back from drainage is spread over exactly the layers
+  ! that receive it (original DEPLT 2386-2432).
+  integer, parameter, public :: FIX_DRAINAGE_SPREAD = 256
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).

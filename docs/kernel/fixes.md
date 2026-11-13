@@ -22,6 +22,7 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 5 | 32 | `ALFALFA_REGROWTH` | Alfalfa with 2 cuttings: KC after the second cutting, so ET |
 | 6 | 64 | `TRANSPIRATION_LIMIT` | Transpiration and ET on water-short days; closes the water balance |
 | 7 | 128 | `WETLAND_BALANCE` | Wetland, riparian woodland and open water: DP and a new supply term (WETSUPS) |
+| 8 | 256 | `DRAINAGE_SPREAD` | DP and soil water where layers sit at field capacity (mostly wetlands); closes the water balance |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -175,3 +176,22 @@ every year although rain soaks in, and nothing is reported as supply; on,
 both are reported, the water balance error shrinks, and ET is unchanged.
 
 This was suspected in the technical reference and is now confirmed.
+
+## DRAINAGE_SPREAD: held-back drainage water spread over uncounted layers
+
+**Original** (DEPLT 2386-2432). After moving water above field capacity
+down the profile, the part that does not drain that day (`1 - DFRACT`)
+is spread evenly as `DIST = (1 - DFRACT) * EXTRA / DISTD` over every layer
+at or above field capacity. `DISTD` (the depth of those layers) leaves out
+any layer that was exactly at field capacity before the first wet layer
+was found, but those layers still get `DIST`, so water is created. It is
+rare for crops but happens daily for wetlands with `WETLAND_BALANCE` on,
+since their layers are held at field capacity.
+
+**Fix.** Count `DISTD` over exactly the layers that receive `DIST`.
+
+**Test.** `test_drainage_spread`: cattails with `WETLAND_BALANCE`; the
+yearly water balance error is over 0.5 in with this fix off and under
+0.001 in with it on.
+
+The earlier review noted this as possible but unmeasured.

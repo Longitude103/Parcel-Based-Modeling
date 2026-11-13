@@ -38,6 +38,7 @@ extern "C" {
 #define CSK_FIX_ALFALFA_REGROWTH             32  /* Alfalfa with two cuttings measures its final regrowth from cutting 2 (original CROPCO 3137). */
 #define CSK_FIX_TRANSPIRATION_LIMIT          64  /* Reported transpiration equals the water taken from the soil (original DEPLT 2267-2310). */
 #define CSK_FIX_WETLAND_BALANCE             128  /* Wetland, riparian and open-water ET is taken from the soil water, with any shortfall reported as supply (original DEPLT 2347-2357). */
+#define CSK_FIX_DRAINAGE_SPREAD             256  /* Water held back from drainage is spread over exactly the layers that receive it (original DEPLT 2386-2432). */
 
 /* BLOCK.DAT and TILLAGE.DAT. */
 typedef struct {

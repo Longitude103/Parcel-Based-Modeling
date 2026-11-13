@@ -28,6 +28,7 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 11 | 2048 | `IRRIGATION_DEPTH` | Demand-scheduled irrigation depth, so NIR, DP and ET |
 | 12 | 4096 | `DRAINAGE_CLOCK` | Timing of deep percolation (faster); small change in annual DP and ET |
 | 13 | 8192 | `INFILTRATION_OUTPUT` | Monthly infiltration output (INFMON) only |
+| 14 | 16384 | `ET_ACCUMULATION` | Seasonal ET for the yield model (ETMAX, ETYLD) on very low-ET days only |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -285,3 +286,16 @@ reported as 0.
 **Test.** `test_infiltration_output`: off, `INFMON` is all zeros; on, it
 sums to the effective rain plus infiltrated irrigation, and nothing else
 changes.
+
+## ET_ACCUMULATION: stale evaporation in seasonal ET
+
+**Original** (DEPLT 2201, 2327). On days when potential evaporation is at
+or below 0.001 in, the evaporation routine is skipped (no evaporation),
+but the seasonal ET totals used for yield (`ETMAX`, `ETYLD`) still add
+`E1 + E2`, which hold the last day evaporation was computed.
+
+**Fix.** Add the day's evaporation.
+
+**Test.** `test_et_accumulation`: corn with some very dull mid-season days
+(ETR 0.001 in): `ETMAX` is larger with the fix off. With ordinary weather
+the results are identical, since such days do not occur.

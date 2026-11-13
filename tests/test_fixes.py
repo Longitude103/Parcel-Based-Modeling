@@ -261,3 +261,21 @@ def test_infiltration_output(kernel, inp):
         soaked = sum(b.daily["eprecip"]) + sum(b.daily["irrinf"])
         assert sum(b.monthly["infmon"]) == pytest.approx(soaked, rel=1e-5)
         assert a.annual["drains"] == b.annual["drains"]   # output only
+
+
+def test_et_accumulation(kernel, inp):
+    """Days with potential evaporation at or below 0.001 in skip the
+    evaporation routine; the original still added the last computed
+    evaporation to the seasonal ET used for yield."""
+    sim = sc.scenarios()["corn_pivot"]
+    w = inp.weather[2012]
+    tiny = w.__class__(**{**w.__dict__, "etr": list(w.etr)})
+    for d in range(180, 240, 3):          # very dull days in mid season
+        tiny.etr[d] = 0.001
+    res = {f: kernel.run_year(sim, inp.soils[622], tiny, inp.initial, fixes=f)
+           for f in (Fix.NONE, Fix.ET_ACCUMULATION)}
+    assert res[Fix.NONE].annual["etmax"] > res[Fix.ET_ACCUMULATION].annual["etmax"] + 0.01
+    # Ordinary weather: no such days, identical results.
+    a = kernel.run_year(sim, inp.soils[622], w, inp.initial)
+    b = kernel.run_year(sim, inp.soils[622], w, inp.initial, fixes=Fix.ET_ACCUMULATION)
+    assert a.annual == b.annual

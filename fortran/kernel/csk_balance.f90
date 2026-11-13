@@ -150,7 +150,7 @@ contains
     type(csk_work_t), intent(inout) :: w
     type(csk_result_t), intent(inout) :: res
     real :: e, t, et, tup, drain, extra, distd, amt, addl, thetup, dfract, dist
-    real :: s0, s1, inflow, outflow, short, take
+    real :: s0, s1, inflow, outflow, short, take, eacc
     integer :: i, jday, jdywet, imon, iday, iweek, itill, crop
     logical :: wet, reach248
 
@@ -367,12 +367,19 @@ contains
         end if
       end if
 
-      ! Seasonal ET and transpiration deficit totals.
+      ! Seasonal ET and transpiration deficit totals. The original added
+      ! E1 + E2, which still hold the last day evaporation was computed
+      ! when it was skipped today (potential at or below 0.001 in).
+      if (fix_on(w, FIX_ET_ACCUMULATION)) then
+        eacc = e
+      else
+        eacc = w%e1 + w%e2
+      end if
       if (reach248) then
         if (crop < 10) then
           if ((w%gdd >= w%gddveg) .and. (w%gdd <= w%gyform)) then
-            w%etmax = w%e1 + w%e2 + w%tp + w%etmax
-            w%etyld = w%e1 + w%e2 + t + w%etyld
+            w%etmax = eacc + w%tp + w%etmax
+            w%etyld = eacc + t + w%etyld
             w%tps(w%kstg) = w%tps(w%kstg) + w%tp
             w%tdefs = w%tdefs + w%tp - t
             w%tdef(w%kstg) = w%tdef(w%kstg) + w%tp - t
@@ -381,8 +388,8 @@ contains
           w%tps(w%icut) = w%tps(w%icut) + w%tp
           w%tdefs = w%tdefs + w%tp - t
           w%tdef(w%icut) = w%tdef(w%icut) + w%tp - t
-          w%etmax = w%e1 + w%e2 + w%tp + w%etmax
-          w%etyld = w%e1 + w%e2 + t + w%etyld
+          w%etmax = eacc + w%tp + w%etmax
+          w%etyld = eacc + t + w%etyld
         end if
       end if
 

@@ -48,6 +48,8 @@ class Fix(enum.IntFlag):
     """The drainage clock restarts only when water soaks in, not on every irrigation check or snow day (original DEPLT 2018-2034, 2146)."""
     INFILTRATION_OUTPUT = 8192
     """Monthly infiltration (INFMON) reports the water that soaked in; the original always reported 0 (original DEPLT 2563)."""
+    ET_ACCUMULATION = 16384
+    """Seasonal ET for yield (ETMAX, ETYLD) adds the day's evaporation, not the last computed one (original DEPLT 2201, 2327)."""
 
 ALL_FIXES = Fix(0)
 for _f in Fix:

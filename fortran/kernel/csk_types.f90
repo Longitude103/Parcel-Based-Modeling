@@ -80,6 +80,9 @@ module csk_types
   ! Monthly infiltration (INFMON) reports the water that soaked in;
   ! the original always reported 0 (original DEPLT 2563).
   integer, parameter, public :: FIX_INFILTRATION_OUTPUT = 8192
+  ! Seasonal ET for yield (ETMAX, ETYLD) adds the day's evaporation,
+  ! not the last computed one (original DEPLT 2201, 2327).
+  integer, parameter, public :: FIX_ET_ACCUMULATION = 16384
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).

@@ -331,7 +331,7 @@ contains
           ! Final regrowth after the last cutting. The original measured
           ! it from cutting 1 when there are two cuttings.
           k = w%icut
-          if (k == 2) k = 1
+          if (k == 2 .and. .not. fix_on(w, FIX_ALFALFA_REGROWTH)) k = 1
           w%pct = real(jd - w%jdycut(k)) / real(305 - w%jdycut(k))
         end if
       end if

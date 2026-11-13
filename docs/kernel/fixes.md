@@ -19,6 +19,7 @@ Line numbers refer to `fortran/original/CROPSIM_V8.0.F90`.
 | 2 | 4 | `IRRIGATION_COUNT` | Reported irrigation count (IRIGNO) and first irrigation day (JFIRST) only |
 | 3 | 8 | `ROTATION_FREQUENCY` | Rotation (IRRSCH 3) delivery count, so NIR, ET, DP |
 | 4 | 16 | `FORAGE_CUTTING_STAGE` | Alfalfa and hay: irrigation limits by cutting, deficits and yield by cutting |
+| 5 | 32 | `ALFALFA_REGROWTH` | Alfalfa with 2 cuttings: KC after the second cutting, so ET |
 
 ## KC_GDD_LAG: crop coefficient one day behind
 
@@ -105,3 +106,17 @@ first cycle's limits; on, the later cycles' limits apply.
 The fixture SIM files use the same values for every stage, so this fix
 changes nothing on the standard test parcels; it matters wherever SIM
 files give different values by cutting.
+
+## ALFALFA_REGROWTH: two-cutting alfalfa regrows from the wrong cutting
+
+**Original** (CROPCO 3137). After the last cutting the crop coefficient
+follows the regrowth curve from that cutting to the end of the season
+(day 305). For the second cycle the code measures it from cutting 1
+instead of cutting 2, so alfalfa with exactly two cuttings gets a
+mid-season KC right after its last cutting.
+
+**Fix.** Measure the final regrowth from the last cutting.
+
+**Test.** `test_alfalfa_regrowth`: two-cutting alfalfa; in the days after
+the second cutting KC is lower with the fix on (back at the start of the
+curve), and the season up to that cutting is unchanged.

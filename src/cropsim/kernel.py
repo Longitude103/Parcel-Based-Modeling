@@ -30,6 +30,8 @@ class Fix(enum.IntFlag):
     """Rotation deliveries (IRRSCH 3) at most every JDFREQ days (original DEPLT 2111, JDFREQ read but never used)."""
     FORAGE_CUTTING_STAGE = 16
     """Alfalfa and hay use the current cutting cycle as the growth stage in the water balance (original DEPLT 1880, 1953; ICUT stuck at 1)."""
+    ALFALFA_REGROWTH = 32
+    """Alfalfa with two cuttings measures its final regrowth from cutting 2 (original CROPCO 3137)."""
 
 ALL_FIXES = Fix(0)
 for _f in Fix:

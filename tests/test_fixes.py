@@ -121,3 +121,16 @@ def test_forage_cutting_stage(kernel, inp):
             assert max(late) <= 0.8 + 1e-6
         else:
             assert min(late) >= 0.75 - 1e-6
+
+
+def test_alfalfa_regrowth(kernel, inp, ):
+    """Two cuttings: after cut 2, KC restarts from the bottom of the curve."""
+    sim = sc.scenarios()["alfalfa_two_cuts"]
+    cut2 = sim.jdycut[1]
+    w = inp.weather[2012]
+    kc = {f: kernel.run_year(sim, inp.soils[622], w, inp.initial, fixes=f).daily["kc"]
+          for f in (Fix.NONE, Fix.ALFALFA_REGROWTH)}
+    for d in range(cut2, cut2 + 5):    # days just after the second cutting
+        assert kc[Fix.ALFALFA_REGROWTH][d] < kc[Fix.NONE][d]
+    # The first part of the season is the same.
+    assert kc[Fix.NONE][:cut2 - 1] == kc[Fix.ALFALFA_REGROWTH][:cut2 - 1]

@@ -53,6 +53,9 @@ module csk_types
   ! Alfalfa and hay use the current cutting cycle as the growth stage
   ! in the water balance (original DEPLT 1880, 1953; ICUT stuck at 1).
   integer, parameter, public :: FIX_FORAGE_CUTTING_STAGE = 16
+  ! Alfalfa with two cuttings measures its final regrowth from cutting 2
+  ! (original CROPCO 3137).
+  integer, parameter, public :: FIX_ALFALFA_REGROWTH = 32
 
   ! ------------------------------------------------------------------
   !  Parameters (BLOCK.DAT and TILLAGE.DAT contents).
